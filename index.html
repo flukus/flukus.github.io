@@ -63,8 +63,8 @@
   
     <article id="post-2016_04_15_Background-Builds-with-Vim-8" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
-    <a href="/2016/04/14/2016_04_15_Background-Builds-with-Vim-8/" class="article-date">
-  <time datetime="2016-04-13T14:00:00.000Z" itemprop="datePublished">2016-04-14</time>
+    <a href="/2016/04/15/2016_04_15_Background-Builds-with-Vim-8/" class="article-date">
+  <time datetime="2016-04-14T14:00:00.000Z" itemprop="datePublished">2016-04-15</time>
 </a>
     
   </div>
@@ -75,7 +75,7 @@
         
   
     <h1 itemprop="name">
-      <a class="article-title" href="/2016/04/14/2016_04_15_Background-Builds-with-Vim-8/">Background Builds with Vim 8</a>
+      <a class="article-title" href="/2016/04/15/2016_04_15_Background-Builds-with-Vim-8/">Background Builds with Vim 8</a>
     </h1>
   
 
@@ -91,8 +91,7 @@ Part of that plugin has been creating a background build process.
 Through a variety of hacks I got it to work, but never to work well,
 so when I discovered that vim 8 was finally supporting background jobs properly I downloaded a nightly binary and started hacking away.
 Here are the results.</p>
-<p>#Starting the job</p>
-<p>First let&#39;s create some handlers to receive message from the build.
+<h1 id="Starting-the-job"><a href="#Starting-the-job" class="headerlink" title="Starting the job"></a>Starting the job</h1><p>First let&#39;s create some handlers to receive message from the build.
 ExitHandler will be called when our process finishes,
 Outhandler will be called for every line from stdout.
 OutHandler won&#39;t actually get used but I found nothing worked without it.</p>
@@ -114,8 +113,7 @@ out_cb and exit_cb set our out and exit callbacks respectively.</p>
 <p>Finally we add the command to call ProjectMake:</p>
 <figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">command! -n=<span class="number">0</span> -<span class="built_in">complete</span>=none ProjectMake <span class="keyword">call</span> ProjectMake()</span><br></pre></td></tr></table></figure>
 <p>Calling :ProjectMake will build the project, now to get some feedback some better feedback from the build.</p>
-<p>#Parsing the output</p>
-<p>Above we defined the exit handler but did nothing with it.
+<h1 id="Parsing-the-output"><a href="#Parsing-the-output" class="headerlink" title="Parsing the output"></a>Parsing the output</h1><p>Above we defined the exit handler but did nothing with it.
 To get the errors we simple add this to the exit handler:</p>
 <figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exec 'silent! cb! ' . g;makeBufNum</span><br></pre></td></tr></table></figure>
 <p>This parses the buffer with the current error format,
@@ -125,25 +123,23 @@ If you want the errors to pop up after you build (I don&#39;t) you can remove th
 <figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> <span class="keyword">list</span> = <span class="built_in">getqflist</span>()</span><br><span class="line"><span class="keyword">let</span> ecount = <span class="number">0</span></span><br><span class="line"><span class="keyword">for</span> i in <span class="keyword">list</span></span><br><span class="line">	<span class="keyword">if</span> i.<span class="built_in">type</span> == <span class="string">"E"</span></span><br><span class="line">		<span class="keyword">let</span> ecount+=<span class="number">1</span></span><br><span class="line">	<span class="keyword">endif</span></span><br><span class="line"><span class="keyword">endfor</span></span><br><span class="line"><span class="keyword">let</span> <span class="variable">g:errorCount</span> = ecount</span><br><span class="line">exec <span class="string">'AirlineRefresh'</span></span><br></pre></td></tr></table></figure>
 <p>This just sets a global variable with the error count.
 My custom airline functions will pick up this number and display it in the bottom corner.</p>
-<p>#Autobuild</p>
-<p>Manual building doesn&#39;t fit the theme of this blog at all of course.
+<h1 id="Autobuild"><a href="#Autobuild" class="headerlink" title="Autobuild"></a>Autobuild</h1><p>Manual building doesn&#39;t fit the theme of this blog at all of course.
 Being proactively lazy means doing a little extra work now for a little bit more laziness in future.
 Let&#39;s create an auto command to compile whenever we save a file:</p>
 <figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">augroup</span> autobuild <span class="comment">" &#123;</span></span><br><span class="line">	autocmd!</span><br><span class="line">	<span class="keyword">au</span> BufWritePost <span class="keyword">c</span>:/my/project/dir/*.<span class="keyword">cs</span> <span class="keyword">call</span> ProjectMake()</span><br><span class="line"><span class="keyword">augroup</span> END <span class="comment">" &#125;</span></span><br></pre></td></tr></table></figure>
 <p>Now whenever we save a file the project will automatically build.
 The final thing is to add some concurrency checks and the code ends up like this:</p>
 <figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">let g:building = 0</span><br><span class="line">let g:queueBuild = 0</span><br><span class="line"></span><br><span class="line">function! ProjectMake()</span><br><span class="line"></span><br><span class="line">	"if a build is active, queue a build instead</span><br><span class="line">	if g:building == 0</span><br><span class="line">		let g:queueBuild = 1</span><br><span class="line">		return</span><br><span class="line">	endif</span><br><span class="line"></span><br><span class="line">	"create/wipe the make buffer</span><br><span class="line">	let currentBuf = bufnr('%')</span><br><span class="line">	let g:makeBufNum = bufnr('make_buffer', 1)</span><br><span class="line">	exec g:makeBufNum . 'bufdo %d'</span><br><span class="line">	exec 'b ' . currentBuf</span><br><span class="line"></span><br><span class="line">	"execute the job</span><br><span class="line">	let cmd = 'nant.bat build test'</span><br><span class="line">	let job = job_start(cmd, &#123;'out_io': 'buffer', 'out_name': 'make_buffer', 'out_cb': 'OutHandler', 'exit_cb': 'ExitHandler'&#125;)</span><br><span class="line">endfunction</span><br><span class="line"></span><br><span class="line">function! ExitHandler(job, status)</span><br><span class="line">	"load the qf list</span><br><span class="line">	exec 'silent! cb! ' . g;makeBufNum</span><br><span class="line"></span><br><span class="line">	"update airline</span><br><span class="line">	let list = getqflist()</span><br><span class="line">	let ecount = 0</span><br><span class="line">	for i in list</span><br><span class="line">		if i.type == "E"</span><br><span class="line">			let ecount+=1</span><br><span class="line">		endif</span><br><span class="line">	endfor</span><br><span class="line">	let g:errorCount = ecount</span><br><span class="line">	exec 'AirlineRefresh'</span><br><span class="line"></span><br><span class="line">	"call ProjectMake if a build is queued</span><br><span class="line">	let g:building = 0</span><br><span class="line">	if g:queueBuild == 1</span><br><span class="line">		call ProjectMake()</span><br><span class="line">	endif</span><br><span class="line"></span><br><span class="line">endfunction</span><br></pre></td></tr></table></figure>
-<p>#Conclusion</p>
-<p>Background jobs are a long awaited and fantastic addition to vim.
+<h1 id="Conclusion"><a href="#Conclusion" class="headerlink" title="Conclusion"></a>Conclusion</h1><p>Background jobs are a long awaited and fantastic addition to vim.
 Building projects in the background is just one of the most obvious examples, I expect to see many more in the near future.
 Hopefully the tired old saying of vim being &quot;just&quot; a text editor can finally be put to rest now it has the necessary features of a true IDE.</p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2016/04/14/2016_04_15_Background-Builds-with-Vim-8/" data-id="cin1538ra001qk4uy82uvl7mk" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2016/04/15/2016_04_15_Background-Builds-with-Vim-8/" data-id="cin15fthp0015uouyx7y7x0wr" class="article-share-link">Share</a>
       
-        <a href="http://flukus.github.io/2016/04/14/2016_04_15_Background-Builds-with-Vim-8/#disqus_thread" class="article-comment-link">Comments</a>
+        <a href="http://flukus.github.io/2016/04/15/2016_04_15_Background-Builds-with-Vim-8/#disqus_thread" class="article-comment-link">Comments</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/vim/">vim</a></li></ul>
@@ -208,7 +204,7 @@ Hopefully the tired old saying of vim being &quot;just&quot; a text editor can f
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/" data-id="cin1538on000tk4uykxw41o3q" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/" data-id="cin15ftgn000guouy4tt5909y" class="article-share-link">Share</a>
       
         <a href="http://flukus.github.io/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -300,7 +296,7 @@ And finally, our IOC container can construct our object graph purely from constr
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2015/07/24/2015_07_24_Simple-Abstractions/" data-id="cin1538qu001ok4uygyho71f5" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2015/07/24/2015_07_24_Simple-Abstractions/" data-id="cin15fti50018uouys982hock" class="article-share-link">Share</a>
       
         <a href="http://flukus.github.io/2015/07/24/2015_07_24_Simple-Abstractions/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -407,7 +403,7 @@ Developers need to get over our habit trying to fit everything into a hierarchal
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2015/07/09/2015_07_09-Interfaces-for-Data/" data-id="cin1538qu001nk4uyj19ubuf7" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2015/07/09/2015_07_09-Interfaces-for-Data/" data-id="cin15fthp0013uouyxeb3jrlk" class="article-share-link">Share</a>
       
         <a href="http://flukus.github.io/2015/07/09/2015_07_09-Interfaces-for-Data/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -542,7 +538,7 @@ Hopefully I&#39;ve straightened out some misconceptions here.</p>
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2015/07/03/2015_07_03-Vim-errorformat-Demystified/" data-id="cin1538qu001kk4uypge3s6zr" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2015/07/03/2015_07_03-Vim-errorformat-Demystified/" data-id="cin15fthp0011uouyd8jhnu9e" class="article-share-link">Share</a>
       
         <a href="http://flukus.github.io/2015/07/03/2015_07_03-Vim-errorformat-Demystified/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -639,7 +635,7 @@ yet they are less capable of supporting it than there strongly types counterpart
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2015/03/14/2015_03_14_Strict-Typing-is-More-Dynamic/" data-id="cin1538qu001ik4uyeebn1syy" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2015/03/14/2015_03_14_Strict-Typing-is-More-Dynamic/" data-id="cin15fthp000yuouynlbesd7s" class="article-share-link">Share</a>
       
         <a href="http://flukus.github.io/2015/03/14/2015_03_14_Strict-Typing-is-More-Dynamic/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -745,7 +741,7 @@ I can see how exposing powershell endpoints to my apps could make administration
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2015/03/13/2015_03_13_Powershell-is-a-Joke/" data-id="cin1538qe001gk4uyji0wk0j8" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2015/03/13/2015_03_13_Powershell-is-a-Joke/" data-id="cin15ftho000wuouywh5xg2l9" class="article-share-link">Share</a>
       
         <a href="http://flukus.github.io/2015/03/13/2015_03_13_Powershell-is-a-Joke/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -838,7 +834,7 @@ I intend to go into this in another post, but until then here is the TLDR of why
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2015/03/12/2015_03_12_PSake-First-Impressions/" data-id="cin1538qe001dk4uys9vbr4ou" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2015/03/12/2015_03_12_PSake-First-Impressions/" data-id="cin15fthl000tuouymv1q3mdn" class="article-share-link">Share</a>
       
         <a href="http://flukus.github.io/2015/03/12/2015_03_12_PSake-First-Impressions/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -888,7 +884,7 @@ I starting wondering if it should be a feature at all.</p>
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2014/09/03/2014_09_03_Test-Ignorance/" data-id="cin1538py001bk4uyjhh5159k" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2014/09/03/2014_09_03_Test-Ignorance/" data-id="cin15fth3000ruouywchvqxmz" class="article-share-link">Share</a>
       
         <a href="http://flukus.github.io/2014/09/03/2014_09_03_Test-Ignorance/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -975,7 +971,7 @@ I starting wondering if it should be a feature at all.</p>
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2014/09/02/2014_07_24_8-Biggest-Mistakes-of-Application-Architecture/" data-id="cin1538pj0010k4uyifbtgo4j" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2014/09/02/2014_07_24_8-Biggest-Mistakes-of-Application-Architecture/" data-id="cin15ftgn000juouyfalqutly" class="article-share-link">Share</a>
       
         <a href="http://flukus.github.io/2014/09/02/2014_07_24_8-Biggest-Mistakes-of-Application-Architecture/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -1034,7 +1030,7 @@ I starting wondering if it should be a feature at all.</p>
       <ul>
         
           <li>
-            <a href="/2016/04/14/2016_04_15_Background-Builds-with-Vim-8/">Background Builds with Vim 8</a>
+            <a href="/2016/04/15/2016_04_15_Background-Builds-with-Vim-8/">Background Builds with Vim 8</a>
           </li>
         
           <li>
