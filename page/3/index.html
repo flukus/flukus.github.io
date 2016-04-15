@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Proactively Lazy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Proactively Lazy">
+<meta property="og:url" content="http://flukus.github.io/page/3/index.html">
+<meta property="og:site_name" content="Proactively Lazy">
+<meta property="og:description">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Proactively Lazy">
+<meta name="twitter:description">
+  
+    <link rel="alternative" href="/atom.xml" title="Proactively Lazy" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+</head>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Proactively Lazy</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://flukus.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main">
+  
+    <article id="post-2011_05_17_Practical-MSBuild---Database-Migrations" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2011/06/10/2011_05_17_Practical-MSBuild---Database-Migrations/" class="article-date">
+  <time datetime="2011-06-09T14:00:00.000Z" itemprop="datePublished">2011-06-10</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2011/06/10/2011_05_17_Practical-MSBuild---Database-Migrations/">Practical MSBuild - Database Migrations</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>I&#39;d like to propose an addendum <a href="http://en.wikipedia.org/wiki/Greenspun&#39;s_Tenth_Rule" target="_blank" rel="external">Greenspuns Tenth Rule</a>. Any sufficiently complicated c# program contains an ad hoc, informally-specified, bug-ridden, slow implementation of half of <a href="https://github.com/schambers/fluentmigrator/wiki" target="_blank" rel="external">Fluent Migrator</a>.</p>
+<p>Keeping database structures up to date with other developers, not to mention production and testing environments is an Incredibly common problem and Fluent Migrator is a seriously good library that helps solve this problem elegantly. Amongst other eco systems the idea of migrations is well accepted, ruby <a href="http://guides.rubyonrails.org/migrations.html" target="_blank" rel="external">rails migrations</a>, java has <a href="http://migrate4j.sourceforge.net/" target="_blank" rel="external">migrate4j</a> and python has <a href="http://pypi.python.org/pypi/yoyo-migrations" target="_blank" rel="external">yoyo migrations</a>, but for some reason the idea has been slow to gain traction in the c# world.</p>
+<p>One of the barriers to adoption so far has been documentation, so in this article I want to show how to leverage Fluent Migrator. There are plenty of good articles on writing migrations so I will only touch on that briefly. Instead, I want to show how to use it as an integral part of the build process, how to avoid some common pitfalls and how to integrate it within the greater project lifecycle.</p>
+<p>#Whats Wrong With *</p>
+<p>For start I&#39;m going to assume that sharing a database between developers is bad idea. Someone may need to make large scale changes that disrupt other developers. Having long running feature branches is impossible (without another database) and it does nothing to solve the problems your eventually going to face at deployment time. This is obviously not an optimal solution.</p>
+<p>Of the many half solutions I&#39;ve seen, simple sql scripts are the most common. Advanced versions of this have sequentially numbered scripts and some sort of batch process to run them in order, in other words, half of Fluent Migrator. Often they will contain checks to ensure there not executed multiple times (so the same column doesn&#39;t get added twice for instance), another 1/4 of Fluent Migrator.</p>
+<p>From a simplicity point of view this may seem rather enticing but doesn&#39;t work nearly as well in practice. This approach isn&#39;t very branch/merge friendly and migrations will need to be run in an explicitly defined order. Sql is also particularly verbose language, especially for structural changes, how many of you can remember the syntax to create a table with an index of the top of your head?</p>
+<p>Other solutions I&#39;ve come across, such as Visual Studio database projects, suffer from similar shortcomings and are deeply rooted in the old school &quot;quarterly release&quot; type project, where a once off upgrade script is written for every release. One particularly notable &quot;solution&quot; I came across was using data dude to generate patch scripts. This was so slow, cumbersome and error prone I still shudder just thinking about it.</p>
+<p>With that in mind here are the goals for this solution:</p>
+<ul>
+<li>Local - Upgrades should be able to run anywhere from the developers PC to the server.</li>
+<li>Fast - This is a freebie (with Fluent Migrator) most migrations will take seconds from start to finish.</li>
+<li>Frequent - Once fast and easy are solved you&#39;ll want to run them much more frequently.</li>
+<li>Production Ready - Migrations should be able to be deployed at a moments notice. This is a by product of the above three.</li>
+</ul>
+<p>#Step 1 - Backup, Delete, Restore, Obfuscate</p>
+<p>The first few requirements are basically &quot;filling in the gaps&quot;, handling the tasks that Fluent Migrator doesn&#39;t deal with. Never the less they are an important part of the overall process. In these examples I will be using Sqlite because it&#39;s simple, file based nature makes it easy to follow the examples without getting lost in the details. Here are the important bits of the database.build file (I&#39;ll post the whole file at the end), this is created with the same techniques I outlined <a href="2011_04_22_Practical-MSBuild---Flexible-Configuration.md">here</a>:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"dbCreate"</span> &gt;</span></span><br><span class="line">  <span class="comment">&lt;!-- SqlLite won't actually create the file because it is an empty database but it is neccessary with other databases --&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Exec</span> <span class="attr">Command</span>=<span class="string">"$(dbSqlitePath)\Sqlite3.exe $(dbPath)\$(dbName) "</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"dbBackup"</span> &gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Copy</span> <span class="attr">SourceFiles</span>=<span class="string">"$(dbPath)\$(dbName)"</span> <span class="attr">DestinationFiles</span>=<span class="string">"$(dbBackupPath)\$(dbBackupName)"</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"dbRestore"</span> &gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Copy</span> <span class="attr">SourceFiles</span>=<span class="string">"$(dbRestoreSource)"</span> <span class="attr">DestinationFiles</span>=<span class="string">"$(dbPath)\$(dbName)"</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"dbDelete"</span> &gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Delete</span> <span class="attr">Files</span>=<span class="string">"$(dbPath)\$(dbName)"</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"dbObfuscate"</span>/&gt;</span></span><br></pre></td></tr></table></figure>
+<p>Backup and delete should be fairly self explanatory but restore needs a bit more explanation. I&#39;ve found it more useful to start from a &quot;known good&quot; version of the database rather than starting from scratch every time. For this I strongly favor using backups from production databases. This gives us much more realistic data to work with when we&#39;re developing, quantatively and qualitatively. Failing that, a database with somewhat realistic looking test data would do.</p>
+<p>A pleasant side effect of using real production data is that, by the time a release comes around, we have run our data migrations dozens/hundreds/thousands of times. This will give much more confidence with the process and make releases much less stressful. An emergency patch can also be tested and verified using much the same process as a full release (because it&#39;s so quick and easy), so no more cowboy live patches.</p>
+<p>Obviously if we have real data it may need obfuscating due to any number of privacy issues that could pop up. Security on developer workstations probably isn&#39;t as thorough as it is on the server and we don&#39;t want people taking sensitive data out of the office. However, I have purposely left the task empty, simply because it will vary so much from project to project.</p>
+<p>#Step 2 - Writing a Migration</p>
+<p>Before any migrations can be written they need a project, a Fluent Migrator script is simply c# library (dll) after all. Usually it gets named something like YourProjectName.Migrations. Here is my recommended database structure:</p>
+<p>TODO: link images
+<a href="http://4.bp.blogspot.com/-OkcjXN6YYeg/TcSWGgd-tDI/AAAAAAAAAA4/2Slq03DFriQ/s1600/pms_migrations.png" target="_blank" rel="external">http://4.bp.blogspot.com/-OkcjXN6YYeg/TcSWGgd-tDI/AAAAAAAAAA4/2Slq03DFriQ/s1600/pms_migrations.png</a>
+<a href="http://4.bp.blogspot.com/-OkcjXN6YYeg/TcSWGgd-tDI/AAAAAAAAAA4/2Slq03DFriQ/s320/pms_migrations.png" target="_blank" rel="external">http://4.bp.blogspot.com/-OkcjXN6YYeg/TcSWGgd-tDI/AAAAAAAAAA4/2Slq03DFriQ/s320/pms_migrations.png</a></p>
+<p>As you can see each revision will get it&#39;s own folder, sooner or later you will have enough migrations to warrant this. The other thing of note is that each version has a data and structure folder. The structure folder will contain the bread and butter of Fluent Migrator, adding/removing tables and columns. The data folder exists to make it easier to find migrations much create/update/delete any reference data that our applications will inevitably have.</p>
+<p>Finally some actual code. This example is a simple migration that creates a products table with a name, description and primary key:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[Migration(0101201104301422)]</span><br><span class="line">public class _01_01_2011_04_30_14_22_AddProductTable : Migration &#123;</span><br><span class="line">  public override void Up() &#123;</span><br><span class="line">    Create.Table(&quot;products&quot;)</span><br><span class="line">      .WithColumn(&quot;product&quot;).AsInt32().PrimaryKey().Identity()</span><br><span class="line">      .WithColumn(&quot;name&quot;).AsString(128).NotNullable()</span><br><span class="line">      .WithColumn(&quot;description&quot;).AsString(int.MaxValue).NotNullable();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  public override void Down() &#123;</span><br><span class="line">    Delete.Table(&quot;products&quot;);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The interesting thing here is the version number which is is probably the least intuitive part of this article. The convention used is: {major}{minor}{year}{month}{day}{hour}{minute}. Major/Minor are our product versions, this ensures that migrations are executed in the order the product is developed. This is particularly important if a project has long running branches with features and bug fixes. The rest is the time the migration is created, hours and minutes simply ensure (almost always) that there are no collisions with other developers writing migrations concurrently.</p>
+<p>This numbering scheme will save much frustration at merge time.</p>
+<p>#Step 3 - Running Migrations</p>
+<p>At the time of writing the msbuild task isn&#39;t working with the version of Fluent Migrator I&#39;m using, it also isn&#39;t documented so I&#39;ll be using using the exec task coupled with the Fluent Migrator console runner. One other thing to remember is that Fluent Migrator is currently a c# 3.5 project so all migrations projects need to be as well. Here is the MS Build task to execute the migrations:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"dbMigrate"</span> <span class="attr">DependsOnTargets</span>=<span class="string">"compile"</span> &gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Exec</span> <span class="attr">Command</span>=<span class="string">"$(dbMigratorPath)\Migrate.exe --target=src\app\PMSBuild.Migrations\bin\debug\PMSBuild.Migrations.dll --db=sqlite --c=&amp;quot;Data Source=$(dbPath)\$(dbName);Version=3;&amp;quot; --verbose=true --version=$(dbVersion)"</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>There are quite a few properties here but it&#39;s the dbVersion property which is the most important. The default is set (at the top of the script) to 0, which will run all migrations. Because the precedence rules I outlined in my last article are used (<a href="#">Practical MS Build - Flexible Configuration</a>), it is easy to migrate to a specific version if needed. From the command line simply specify a new value for the property:</p>
+<pre><code>msbuild project.build /target:dbMigrate /property:dbVersion=0101201104301422
+</code></pre><p>#Step 4 - Migrating Data</p>
+<p>One of the most cited reasons for dismissing Fluent Migrator is that it doesn&#39;t handle data migrations. This is throwing the baby out with the bath water. It is true that Fluent Migrator doesn&#39;t handle this but it does provide an excellent framework to execute and track such migrations.</p>
+<p>Because we&#39;re <a href="http://www.codinghorror.com/blog/2004/10/a-pragmatic-quick-reference.html" target="_blank" rel="external">pragmatic programmers</a> that use the right tool for the job, we&#39;ll want to modify our data with a language made for just that: SQL. Fortunately Fluent Migrator allows us to execute arbitrary sql, we just need a little bit of organization and self discipline.</p>
+<p>Lets say a migration needs to add a meta column to the products table created above and that we need to populate it with the description, to serve as a place holder until a real person edits it. The first part is easy, just create another migration which adds the column:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">[Migration(0101201105021944)]</span><br><span class="line">public class _01_01_2011_05_02_19_44_AddMetaColumnToProduct : Migration &#123;</span><br><span class="line">  public override void Up() &#123;</span><br><span class="line">    Create.Column(&quot;meta&quot;).OnTable(&quot;products&quot;)</span><br><span class="line">      .AsString(int.MaxValue)</span><br><span class="line">      .NotNullable()</span><br><span class="line">      .WithDefaultValue(&quot;&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">  public override void Down() &#123;</span><br><span class="line">    Delete.Column(&quot;meta&quot;).FromTable(&quot;products&quot;);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Next we need to create an sql file to hold our script. Generally I stick to the same naming conventions used for the migration classes so I created 01_01_2011_05_02_19_44_PopulateMetaOnMigrations.sql in the same directory as the migration classes:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">UPDATE</span> products</span><br><span class="line"><span class="keyword">SET</span> meta = [description]</span><br></pre></td></tr></table></figure>
+<p>This is about as straight forward as sql scripts get. Next I create a resource (0101_SqlMigrations.resx) file in the version directory and add the above script as a file resource. This compiles the script into the dll which simplifies things when we need to use our migrations externally (installers etc).</p>
+<p>The last thing to do is modify the migration class above with a line to execute the file:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public override void Up() &#123;</span><br><span class="line">  /* previous code */</span><br><span class="line">  Execute.Sql(_0101_SqlMigrations._01_01_2011_05_02_19_44_PopulateMetaOnMigrations);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>#Wrapping Up</p>
+<p>A fast, flexible and complete solution to manage databases. With this approach you will never again will you fear long running branches. Never gain have to develop against a database being modified by others. Most importantly, never again dread database upgrades at release time. Once you get used to a solution like this going back to anything else will seem slow and archaic and error prone.</p>
+<p>As promised here is the complete database.build script:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">xml</span> <span class="attr">version</span>=<span class="string">"1.0"</span> <span class="attr">encoding</span>=<span class="string">"utf-8"</span>? /&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">Project</span> <span class="attr">xmlns</span>=<span class="string">"http://schemas.microsoft.com/developer/msbuild/2003"</span>&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="tag">&lt;<span class="name">PropertyGroup</span>&gt;</span></span><br><span class="line">   <span class="tag">&lt;<span class="name">dbName</span> <span class="attr">Condition</span>=<span class="string">"'$(dbName)' == ''"</span>&gt;</span>Test.db<span class="tag">&lt;/<span class="name">dbName</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dbPath</span> <span class="attr">Condition</span>=<span class="string">"'$(dbPath)' == ''"</span>&gt;</span>database<span class="tag">&lt;/<span class="name">dbPath</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dbSqlitePath</span> <span class="attr">Condition</span>=<span class="string">"'$(dbSqlitePath)' == ''"</span>&gt;</span>c:/Program Files/Sqlite<span class="tag">&lt;/<span class="name">dbSqlitePath</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dbBackupPath</span> <span class="attr">Condition</span>=<span class="string">"'$(dbBackupPath)' == ''"</span>&gt;</span>d:\databases\backups<span class="tag">&lt;/<span class="name">dbBackupPath</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dbBackupName</span> <span class="attr">Condition</span>=<span class="string">"'$(dbBackupName)' == ''"</span>&gt;</span>Test_Backup.db<span class="tag">&lt;/<span class="name">dbBackupName</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dbRestoreSource</span> <span class="attr">Condition</span>=<span class="string">"'$(dbRestoreSource)' == ''"</span>&gt;</span>d:\databases\backups\Prod_2011_04_30.db<span class="tag">&lt;/<span class="name">dbRestoreSource</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dbMigratorPath</span> <span class="attr">Condition</span>=<span class="string">"'$(dbMigratorPath)' == ''"</span> &gt;</span>packages\FluentMigrator.0.9.0.0\tools<span class="tag">&lt;/<span class="name">dbMigratorPath</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">dbVersion</span> <span class="attr">Condition</span>=<span class="string">"'$(dbVersion)' == ''"</span> &gt;</span>0<span class="tag">&lt;/<span class="name">dbVersion</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">PropertyGroup</span>&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"dbEcho"</span> &gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Message</span> <span class="attr">Text</span>=<span class="string">"dbName: $(dbName)"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Message</span> <span class="attr">Text</span>=<span class="string">"dbPath: $(dbPath)"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Message</span> <span class="attr">Text</span>=<span class="string">"dbSqlitePath: $(dbSqlitePath)"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Message</span> <span class="attr">Text</span>=<span class="string">"dbBackupPath: $(dbBackupPath)"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Message</span> <span class="attr">Text</span>=<span class="string">"dbBackupName: $(dbBackupName)"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Message</span> <span class="attr">Text</span>=<span class="string">"dbRestoreSource: $(dbRestoreSource)"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Message</span> <span class="attr">Text</span>=<span class="string">"dbMigratorPath: $(dbMigratorPath)"</span> /&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="comment">&lt;!--&lt;UsingTask TaskName="FluentMigrator.MSBuild.Migrate" AssemblyFile="lib\FluentMigrator\FluentMigrator.MSBuild.dll"/&gt;--&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"dbCreate"</span> &gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- This won't actually create the file because it is an empty database --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Exec</span> <span class="attr">Command</span>=<span class="string">"$(dbSqlitePath)\Sqlite3.exe $(dbPath)\$(dbName) "</span> /&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"dbBackup"</span> &gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Copy</span> <span class="attr">SourceFiles</span>=<span class="string">"$(dbPath)\$(dbName)"</span> <span class="attr">DestinationFiles</span>=<span class="string">"$(dbBackupPath)\$(dbBackupName)"</span> /&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"dbRestore"</span> &gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Copy</span> <span class="attr">SourceFiles</span>=<span class="string">"$(dbRestoreSource)"</span> <span class="attr">DestinationFiles</span>=<span class="string">"$(dbPath)\$(dbName)"</span> /&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"dbDelete"</span> &gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Delete</span> <span class="attr">Files</span>=<span class="string">"$(dbPath)\$(dbName)"</span> /&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"dbObfuscate"</span>/&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"dbMigrate"</span> <span class="attr">DependsOnTargets</span>=<span class="string">"compile"</span> &gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">Exec</span> <span class="attr">Command</span>=<span class="string">"$(dbMigratorPath)\Migrate.exe --target=src\app\PMSBuild.Migrations\bin\debug\PMSBuild.Migrations.dll --db=sqlite --c=&amp;amp;amp;quot;Data Source=$(dbPath)\$(dbName);Version=3;&amp;amp;amp;quot; --verbose=true --version=$(dbVersion)"</span> /&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;/<span class="name">Project</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2011/06/10/2011_05_17_Practical-MSBuild---Database-Migrations/" data-id="cin1538o2000fk4uy6q13y5bz" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2011/06/10/2011_05_17_Practical-MSBuild---Database-Migrations/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/build/">build</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/msbuild/">msbuild</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/sql/">sql</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-2011_06_10_Practical-MSBuild---Avoiding Spaghetti-Builds" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2011/06/10/2011_06_10_Practical-MSBuild---Avoiding Spaghetti-Builds/" class="article-date">
+  <time datetime="2011-06-09T14:00:00.000Z" itemprop="datePublished">2011-06-10</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2011/06/10/2011_06_10_Practical-MSBuild---Avoiding Spaghetti-Builds/">Practical MSBuild - Avoiding Spaghetti Builds</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>A spaghetti build, much like spaghetti code, is a hair pulling experience. Most developers (but not nearly enough) know how to avoid spaghetti code, refactoring, extracting classes and methods from tight loops, removing unexpected consequences. Quit frequently however, these same principles don&#39;t get applied to our build scripts. Here I want to show an example of a spaghetti build and then some techniques on how to avoid them.</p>
+<p>Here I put together an example of what I would consider a spaghetti build, regrettably some of this comes straight from the MS Build documentation:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Project</span> <span class="attr">DefaultTargets</span>=<span class="string">"localBuild"</span> <span class="attr">xmlns</span>=<span class="string">"http://schemas.microsoft.com/developer/msbuild/2003"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Choose</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">When</span> <span class="attr">Condition</span>=<span class="string">" '$(Configuration)'=='Server' "</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">PropertyGroup</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">databaseConnection</span>&gt;</span> Data Source=staging;Initial Catalog=myDataBase;Integrated Security=SSPI;<span class="tag">&lt;/<span class="name">databaseConnection</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">nunitPath</span>&gt;</span>c:\nunit<span class="tag">&lt;/<span class="name">nunitPath</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">projectVersion</span>&gt;</span>1.1.0.0<span class="tag">&lt;/<span class="name">projectVersion</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">runIntegrationTests</span>&gt;</span>True<span class="tag">&lt;/<span class="name">runIntegrationTests</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">PropertyGroup</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">When</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">When</span> <span class="attr">Condition</span>=<span class="string">" '$(Configuration)'=='Local' "</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">PropertyGroup</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">databaseConnection</span>&gt;</span>Data Source=localhost;Initial Catalog=myDataBase;Integrated Security=SSPI;<span class="tag">&lt;/<span class="name">databaseConnection</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">nunitPath</span>&gt;</span>c:\nunit<span class="tag">&lt;/<span class="name">nunitPath</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">projectVersion</span>&gt;</span>1.1.0.0<span class="tag">&lt;/<span class="name">projectVersion</span>&gt;</span><span class="tag">&lt;<span class="name">br</span> /&gt;</span>        <span class="tag">&lt;<span class="name">runIntegrationTests</span>&gt;</span>False<span class="tag">&lt;/<span class="name">runIntegrationTests</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">PropertyGroup</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">When</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">Choose</span>&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"serverBuild"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"init"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"compile"</span>  /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"migrateDb"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"test"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"package"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"deploy"</span> /&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"localBuild"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"init"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"compile"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"migrateDb"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"test"</span> /&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;/<span class="name">Project</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>#Anti-pattern: One Build to rule them all</p>
+<p>At first glance a build like this might look like a good idea. The entirety of the build process has been simplified down to two targets and all configuration is handled by a single property and life seems pretty simple. The trade off however is flexibility, the above approach has in essence created the &quot;one build to rule the all&quot;, it is an anti pattern that can result in individual tasks being unable to run in isolation.</p>
+<p>Another problem is that it violates the repeatability principle. It is impossible to run a &quot;server&quot; build without being logged in to the server or by checking in code changes. A solid build system should instead be repeatable anywhere, no special rules should exist for a CI build. I addressed how to handle properties in my post on <a href="http://proactivelylazy.blogspot.com/2011/04/practical-ms-build-flexible.html" target="_blank" rel="external">flexible configuration</a>.</p>
+<p>#Tasks should declare dependencies.</p>
+<p>In the above example tasks didn&#39;t declare their dependencies because the meta tasks (clientBuild, serverBuild) called them in an explicit order. A cleaner and more flexible approach is to have each task declare it&#39;s dependencies and let MS Build work out which order to run them in. The testUnit task for example will depend on the code having been compiled first, so it should be declared like this:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"testIntegration"</span> <span class="attr">DependsOnTargets</span>=<span class="string">"compile"</span> &gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Message</span> <span class="attr">Text</span>=<span class="string">"testIntegration"</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>The testIntegration tasks also needs an up to date database to run so will depend on the migrate task as well:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"testIntegration"</span> <span class="attr">DependsOnTargets</span>=<span class="string">"compile;dbMigrate"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Message</span> <span class="attr">Text</span>=<span class="string">"testIntegration"</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>A general rule of thumb is that if a task depends on the output of another task then that dependency should be explicitly declared.</p>
+<p>#Users should declare targets</p>
+<p>The package task is an example of where the reverse is true. Before packaging the unit test and integration tests need to pass, it would seem natural to make these dependencies. Package however doesn&#39;t depend on the output of testUnit or testIntegration so it should be left up to the user to declare this dependency instead:</p>
+<pre><code>msbuild build.proj /target:testUnit;testIntegration;package
+</code></pre><p>This way the build still fails if the tests fail but someone can be working on the installer without worrying about long build times.</p>
+<p>Another common example is code versioning, generating an AssemblyInfo class with the appropriate info. Here is a hypothetical version task to do this:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"version"</span> &gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">AssemblyInfoGen</span> <span class="attr">Version</span>=<span class="string">"$(version)"</span> <span class="attr">Output</span>=<span class="string">"build\src\AssemblyInfo.cs"</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>It would be tempting to have the compile task dependant on this, but this would trigger a full recompile every time (MS Build will only recompile if the files have changed). Release builds are usually the only one that cares about correct version so it doesn&#39;t make sense to slow down every build for one, relatively rare occurrence. The compile task will use the output from the version task but does not depend on it, It simply doesn&#39;t care one way or the other.</p>
+<p>Anyone that does cares about the correct AssemblyInfo being generated should should make this explicit:</p>
+<pre><code>msbuild build.proj /target:version;compile
+</code></pre><p>When users declare their targets it keeps the dependency chain simple, shallow and, above all, understandable. Once again I want to stress that the CI server should be considered as just another user, no more or less important than the developers.</p>
+<p>MS Build come equipped with a call target task which should be avoided whenever possible. Many times I&#39;ve seen people try to refactor build scripts to conditionally call other tasks. The above example had a &quot;Server&quot; build and a &quot;local&quot; build, other variations include &quot;trunk&quot; and &quot;stable&quot; as well as &quot;test&quot; and &quot;release&quot;.</p>
+<p>What they all have in common is that the violate the repeatability principle. And the points I outlined above give you all you need to avoid this antipattern.</p>
+<p>Another quite common example is having test task that executes an integration and unit test task (to save keystrokes:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;Target Name="test" /&gt;</span><br><span class="line">  &lt;CallTarget Targets="testUnit;testIntegration" /&gt;&lt;</span><br><span class="line">&lt;/Target&gt;</span><br></pre></td></tr></table></figure>
+<p>A better alternative would be to declare them as dependencies:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"test"</span> <span class="attr">DependsOnTargets</span>=<span class="string">"testUnit;testIntegration"</span> /&gt;</span></span><br></pre></td></tr></table></figure>
+<p>#Have many builds</p>
+<p>One way these meta tasks come about is when something needs to be repeated more than once. A &quot;stable&quot; build for example might produce a 32 and a 64 bit version that would be a waste of time if every developer had to repeat for every check in. A far easier solution to this is to enlist he CI server rather than the build system. A typical project might contain the following CI configurations:</p>
+<ul>
+<li>UltraProduct Trunk</li>
+<li>UltraProduct Test</li>
+<li>UltraProduct 1.2 32 bit</li>
+<li>UltraProduct 1.2 64 bit</li>
+<li>UltraProduct 1.4 32 bit</li>
+<li>UltraProduct 1.4 64 bit</li>
+</ul>
+<p>The details will differ wildly depending on your project. Some only need a stable and development version while others will need to maintain several stable versions and a few development branches simultaneously. Scrum developers might decide on a build for each sprint so as not to have people checking in half implemented features.</p>
+<p>Remember, not all builds have to run every check in, a test build might only need to happen when the testers are ready for a new version, a release build can generally happen overnight and a trunk build doesn&#39;t need to pass all integration tests. Each build configuration will have different needs and should be unaffected by other configurations.</p>
+<p>These are a few simple rules I&#39;ve come up with from real world situations, developing builds scripts and working with others. If you have suggestions for more I&#39;d like to hear them.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2011/06/10/2011_06_10_Practical-MSBuild---Avoiding Spaghetti-Builds/" data-id="cin1538oh000hk4uypd30vyz1" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2011/06/10/2011_06_10_Practical-MSBuild---Avoiding Spaghetti-Builds/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/build/">build</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/msbuild/">msbuild</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-2011_04_22_Practical-MSBuild---Felxible-Configuration" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2011/04/22/2011_04_22_Practical-MSBuild---Felxible-Configuration/" class="article-date">
+  <time datetime="2011-04-21T14:00:00.000Z" itemprop="datePublished">2011-04-22</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2011/04/22/2011_04_22_Practical-MSBuild---Felxible-Configuration/">Practical MSBuild - Flexible Configuration</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Any sufficiently complex build script will contain dozens of variables. Database names, IIS sites, compile options and test configurations are good examples of variable that can change from machine to machine, even branch to branch.</p>
+<p>Many scripts I&#39;ve seen rely on various assumptions about the machine it will be running. Others force everything to be explicitly defined for every build run. Many try to do both (TFS) at once and result in a spaghetti like mess.</p>
+<p>This is what I have found to be an effective approach to juggling these variables, avoiding unnecessary surprises yet still remaining flexible.</p>
+<p>#Declaring the Properties</p>
+<p>First of all, a build script should declare all it&#39;s variables near the top. These values should generally be sensible defaults, values that will work for most developers most of the time. I&#39;ll get to what the condition attributes are for further down, here is a typical PropertyGroup section:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">PropertyGroup</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">databaseConnection</span> <span class="attr">Condition</span>=<span class="string">"'$(databaseConnection)' == ''"</span>&gt;</span>Data Source=myServerAddress;Initial Catalog=myDataBase;Integrated Security=SSPI;<span class="tag">&lt;/<span class="name">databaseConnection</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">nunitPath</span> <span class="attr">Condition</span>=<span class="string">"'$(nunitPath)' == ''"</span>&gt;</span>c:\nunit<span class="tag">&lt;/<span class="name">nunitPath</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">projectVersion</span> <span class="attr">Condition</span>=<span class="string">"'$(projectVersion)' == ''"</span>&gt;</span>1.1.0.0<span class="tag">&lt;/<span class="name">projectVersion</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">PropertyGroup</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>Next is the echo task. This will probably seem repetitive but we will be overriding these variables from various sources so it&#39;s important to have a sanity check, especially when it&#39;s running on a build server. The code itself is straight forward:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"echo"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Message</span> <span class="attr">Text</span>=<span class="string">"databaseConnection: $(databaseConnection)"</span> /&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Message</span> <span class="attr">Text</span>=<span class="string">"nunitPath: $(nunitPath)"</span> /&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Message</span> <span class="attr">Text</span>=<span class="string">"projectVersion: $(projectVersion)"</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>To run this script open up the Visual Studio command prompt, cd to the project directory and type:</p>
+<pre><code>msbuild project.build /target:echo
+</code></pre><p>There are going to be many times when we want to override the default values and this is exactly what the Condition attribute is for. If someone (usually the build server) needed to use a different database it can be overridden from the command line:</p>
+<p>  msbuild project.build /target:echo /property:databaseConnection=&quot;a custom connection string&quot;</p>
+<p>databaseConnection will only be defined if the Condition attribute evaluates to true. Because we defined the property from the command line the condition evaluated to false. This simply bit of code has created a precedence order where command line property &gt; default property. In real world usage this saves a great deal of automagic configuration and/or assumptions about the operating environment.</p>
+<p>#Developer Configuration</p>
+<p>Of course a real world build script could have dozens of properties and typing these into the command line every time would get a bit monotonous. This can be avoided by creating a properties file that will save all our personal settings.</p>
+<p>A properties file (I usually call it local.properties) sits in the root directory (along with the main build file) and is just a special MS Build script the will be imported into the main script. A properties file should never be kept in source control and should be explicitly excluded. Here is what a properties file will look like:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Project</span> <span class="attr">xmlns</span>=<span class="string">"http://schemas.microsoft.com/developer/msbuild/2003"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">PropertyGroup</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">nunitPath</span> <span class="attr">Condition</span>=<span class="string">"'$(nunitPath)' == ''"</span>&gt;</span>C:\Program Files\nunit<span class="tag">&lt;/<span class="name">nunitPath</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">PropertyGroup</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">Project</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>The first line of the main build script will then have:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Import</span> <span class="attr">Project</span>=<span class="string">"local.properties"</span> <span class="attr">Condition</span>=<span class="string">"Exists('local.properties')"</span> /&gt;</span></span><br></pre></td></tr></table></figure>
+<p>This will import the properties file if it exists and the properties declared in this file will override those in the main script. In this case the properties file overrides the nunitPath property because this developer installed it to a location that differs from the rest of the team, this is no big deal because he only has to specify it once and never think about it again.</p>
+<p>Now the precedence order is: command line property &gt; properties file property &gt; default property. This is a good rule that will generally suite everyone. A developer with all the defaults will have no configuration yet configuration will be easy for anyone with different needs.</p>
+<p>And that&#39;s it, the basis of a flexible, configurable and maintainable build system with MS Build. I intend to write a series of articles on MS Build in the near future as well as a working sample project, as I did with the Frictionless WCF example, so stay tuned.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2011/04/22/2011_04_22_Practical-MSBuild---Felxible-Configuration/" data-id="cin1538o2000ek4uysro5ads9" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2011/04/22/2011_04_22_Practical-MSBuild---Felxible-Configuration/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/build/">build</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/msbuild/">msbuild</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+  
+    <nav id="page-nav">
+      <a class="extend prev" rel="prev" href="/page/2/">&laquo; Prev</a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span>
+    </nav>
+  
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AAATest/">AAATest</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/android/">android</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/app-harbor/">app harbor</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/architecture/">architecture</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/build/">build</a><span class="tag-list-count">8</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/c/">c#</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general/">general</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general-programming/">general programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/integration-test/">integration test</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/msbuild/">msbuild</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nServiceBus/">nServiceBus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nant/">nant</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nunit/">nunit</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/orm/">orm</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/powershell/">powershell</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/psake/">psake</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/scm/">scm</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sql/">sql</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unit-test/">unit test</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/AAATest/" style="font-size: 12.5px;">AAATest</a> <a href="/tags/android/" style="font-size: 10px;">android</a> <a href="/tags/app-harbor/" style="font-size: 10px;">app harbor</a> <a href="/tags/architecture/" style="font-size: 15px;">architecture</a> <a href="/tags/build/" style="font-size: 20px;">build</a> <a href="/tags/c/" style="font-size: 15px;">c#</a> <a href="/tags/general/" style="font-size: 10px;">general</a> <a href="/tags/general-programming/" style="font-size: 10px;">general programming</a> <a href="/tags/integration-test/" style="font-size: 10px;">integration test</a> <a href="/tags/msbuild/" style="font-size: 15px;">msbuild</a> <a href="/tags/nServiceBus/" style="font-size: 10px;">nServiceBus</a> <a href="/tags/nant/" style="font-size: 12.5px;">nant</a> <a href="/tags/nunit/" style="font-size: 10px;">nunit</a> <a href="/tags/orm/" style="font-size: 15px;">orm</a> <a href="/tags/powershell/" style="font-size: 12.5px;">powershell</a> <a href="/tags/psake/" style="font-size: 10px;">psake</a> <a href="/tags/scm/" style="font-size: 10px;">scm</a> <a href="/tags/sql/" style="font-size: 17.5px;">sql</a> <a href="/tags/unit-test/" style="font-size: 15px;">unit test</a> <a href="/tags/vim/" style="font-size: 12.5px;">vim</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">August 2015</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/07/">July 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/03/">March 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/09/">September 2014</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/08/">August 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/12/">December 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/09/">September 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/03/">March 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/01/">January 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/08/">August 2011</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/06/">June 2011</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/04/">April 2011</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recents</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2016/04/14/2016_04_15_Background-Builds-with-Vim-8/">Background Builds with Vim 8</a>
+          </li>
+        
+          <li>
+            <a href="/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/">ORM vs SQL Part 1 - Paging</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/24/2015_07_24_Simple-Abstractions/">Simple Abstractions</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/09/2015_07_09-Interfaces-for-Data/">Simple Interfaces for Data</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/03/2015_07_03-Vim-errorformat-Demystified/">Vim errorformat Demystified</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2016 Luke Usher<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+<script>
+  var disqus_shortname = 'proactivelylazy';
+  
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/count.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Proactively Lazy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Proactively Lazy">
+<meta property="og:url" content="http://flukus.github.io/index.html">
+<meta property="og:site_name" content="Proactively Lazy">
+<meta property="og:description">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Proactively Lazy">
+<meta name="twitter:description">
+  
+    <link rel="alternative" href="/atom.xml" title="Proactively Lazy" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+</head>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Proactively Lazy</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://flukus.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main">
+  
+    <article id="post-2016_04_15_Background-Builds-with-Vim-8" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/04/14/2016_04_15_Background-Builds-with-Vim-8/" class="article-date">
+  <time datetime="2016-04-13T14:00:00.000Z" itemprop="datePublished">2016-04-14</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/04/14/2016_04_15_Background-Builds-with-Vim-8/">Background Builds with Vim 8</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Hallelujah! The impending release of Vim 8 is finally adding asynchronous process support.
+This is something I&#39;ve wanted since I first started using vim.
+It finally opens up a whole new world of possibilities.</p>
+<p>Lately I&#39;ve been working on an as yet unnamed plugin to manage projects.
+Part of that plugin has been creating a background build process.
+Through a variety of hacks I got it to work, but never to work well,
+so when I discovered that vim 8 was finally supporting background jobs properly I downloaded a nightly binary and started hacking away.
+Here are the results.</p>
+<p>#Starting the job</p>
+<p>First let&#39;s create some handlers to receive message from the build.
+ExitHandler will be called when our process finishes,
+Outhandler will be called for every line from stdout.
+OutHandler won&#39;t actually get used but I found nothing worked without it.</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span>! <span class="title">OutHandler</span><span class="params">(job, message)</span></span></span><br><span class="line"><span class="keyword">endfunction</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span>! <span class="title">ExitHandler</span><span class="params">(job, status)</span></span></span><br><span class="line"><span class="keyword">endfunction</span></span><br></pre></td></tr></table></figure>
+<p>Next is creating a buffer to hold the output.
+Technically this isn&#39;t needed, but I like being able to see the raw output at times.</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">function</span>! <span class="title">ProjectMake</span><span class="params">()</span></span></span><br><span class="line">	<span class="keyword">let</span> currentBuf = <span class="built_in">bufnr</span>(<span class="string">'%'</span>)</span><br><span class="line">	<span class="keyword">let</span> <span class="variable">g:makeBufNum</span> = <span class="built_in">bufnr</span>(<span class="string">'make_buffer'</span>, <span class="number">1</span>)</span><br><span class="line">	exec <span class="variable">g:makeBufNum</span> . <span class="string">'bufdo %d'</span></span><br><span class="line">	exec <span class="string">'b '</span> . currentBuf</span><br><span class="line"><span class="keyword">endfunction</span></span><br></pre></td></tr></table></figure>
+<p>First of all this get&#39;s the current buffer number.
+Then a new buffer is created or reused with the bufnr function.
+This buffer is then reset and finally switches back to the whatever the current buffer was.</p>
+<p>Now we start the job in the same function:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> cmd = <span class="string">'nant.bat build test'</span></span><br><span class="line"><span class="keyword">let</span> job = job_start(cmd, &#123;<span class="string">'out_io'</span>: <span class="string">'buffer'</span>, <span class="string">'out_name'</span>: <span class="string">'make_buffer'</span>, <span class="string">'out_cb'</span>: <span class="string">'OutHandler'</span>, <span class="string">'exit_cb'</span>: <span class="string">'ExitHandler'</span>&#125;)</span><br></pre></td></tr></table></figure>
+<p>The specifics of what program is used to compile will obviously vary from project to project,
+here cmd is set to be a simple batch file that I use to bootstrap my nant builds.
+I compile and execute tests as part of my normal build,
+this way compile errors and test failures both end up in my quickfix list.</p>
+<p>We tell the process to output to a buffer with the out_io and out_name parameters.
+out_cb and exit_cb set our out and exit callbacks respectively.</p>
+<p>Finally we add the command to call ProjectMake:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">command! -n=<span class="number">0</span> -<span class="built_in">complete</span>=none ProjectMake <span class="keyword">call</span> ProjectMake()</span><br></pre></td></tr></table></figure>
+<p>Calling :ProjectMake will build the project, now to get some feedback some better feedback from the build.</p>
+<p>#Parsing the output</p>
+<p>Above we defined the exit handler but did nothing with it.
+To get the errors we simple add this to the exit handler:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exec 'silent! cb! ' . g;makeBufNum</span><br></pre></td></tr></table></figure>
+<p>This parses the buffer with the current error format,
+the same as what would happen if we called :make.
+If you want the errors to pop up after you build (I don&#39;t) you can remove the silent! and &#39;!&#39; from the command.</p>
+<p>Personally I like the errors to be a bit less intrusive, so I have the count appear in my airline:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> <span class="keyword">list</span> = <span class="built_in">getqflist</span>()</span><br><span class="line"><span class="keyword">let</span> ecount = <span class="number">0</span></span><br><span class="line"><span class="keyword">for</span> i in <span class="keyword">list</span></span><br><span class="line">	<span class="keyword">if</span> i.<span class="built_in">type</span> == <span class="string">"E"</span></span><br><span class="line">		<span class="keyword">let</span> ecount+=<span class="number">1</span></span><br><span class="line">	<span class="keyword">endif</span></span><br><span class="line"><span class="keyword">endfor</span></span><br><span class="line"><span class="keyword">let</span> <span class="variable">g:errorCount</span> = ecount</span><br><span class="line">exec <span class="string">'AirlineRefresh'</span></span><br></pre></td></tr></table></figure>
+<p>This just sets a global variable with the error count.
+My custom airline functions will pick up this number and display it in the bottom corner.</p>
+<p>#Autobuild</p>
+<p>Manual building doesn&#39;t fit the theme of this blog at all of course.
+Being proactively lazy means doing a little extra work now for a little bit more laziness in future.
+Let&#39;s create an auto command to compile whenever we save a file:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">augroup</span> autobuild <span class="comment">" &#123;</span></span><br><span class="line">	autocmd!</span><br><span class="line">	<span class="keyword">au</span> BufWritePost <span class="keyword">c</span>:/my/project/dir/*.<span class="keyword">cs</span> <span class="keyword">call</span> ProjectMake()</span><br><span class="line"><span class="keyword">augroup</span> END <span class="comment">" &#125;</span></span><br></pre></td></tr></table></figure>
+<p>Now whenever we save a file the project will automatically build.
+The final thing is to add some concurrency checks and the code ends up like this:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">let g:building = 0</span><br><span class="line">let g:queueBuild = 0</span><br><span class="line"></span><br><span class="line">function! ProjectMake()</span><br><span class="line"></span><br><span class="line">	"if a build is active, queue a build instead</span><br><span class="line">	if g:building == 0</span><br><span class="line">		let g:queueBuild = 1</span><br><span class="line">		return</span><br><span class="line">	endif</span><br><span class="line"></span><br><span class="line">	"create/wipe the make buffer</span><br><span class="line">	let currentBuf = bufnr('%')</span><br><span class="line">	let g:makeBufNum = bufnr('make_buffer', 1)</span><br><span class="line">	exec g:makeBufNum . 'bufdo %d'</span><br><span class="line">	exec 'b ' . currentBuf</span><br><span class="line"></span><br><span class="line">	"execute the job</span><br><span class="line">	let cmd = 'nant.bat build test'</span><br><span class="line">	let job = job_start(cmd, &#123;'out_io': 'buffer', 'out_name': 'make_buffer', 'out_cb': 'OutHandler', 'exit_cb': 'ExitHandler'&#125;)</span><br><span class="line">endfunction</span><br><span class="line"></span><br><span class="line">function! ExitHandler(job, status)</span><br><span class="line">	"load the qf list</span><br><span class="line">	exec 'silent! cb! ' . g;makeBufNum</span><br><span class="line"></span><br><span class="line">	"update airline</span><br><span class="line">	let list = getqflist()</span><br><span class="line">	let ecount = 0</span><br><span class="line">	for i in list</span><br><span class="line">		if i.type == "E"</span><br><span class="line">			let ecount+=1</span><br><span class="line">		endif</span><br><span class="line">	endfor</span><br><span class="line">	let g:errorCount = ecount</span><br><span class="line">	exec 'AirlineRefresh'</span><br><span class="line"></span><br><span class="line">	"call ProjectMake if a build is queued</span><br><span class="line">	let g:building = 0</span><br><span class="line">	if g:queueBuild == 1</span><br><span class="line">		call ProjectMake()</span><br><span class="line">	endif</span><br><span class="line"></span><br><span class="line">endfunction</span><br></pre></td></tr></table></figure>
+<p>#Conclusion</p>
+<p>Background jobs are a long awaited and fantastic addition to vim.
+Building projects in the background is just one of the most obvious examples, I expect to see many more in the near future.
+Hopefully the tired old saying of vim being &quot;just&quot; a text editor can finally be put to rest now it has the necessary features of a true IDE.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2016/04/14/2016_04_15_Background-Builds-with-Vim-8/" data-id="cin1538ra001qk4uy82uvl7mk" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2016/04/14/2016_04_15_Background-Builds-with-Vim-8/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/vim/">vim</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-2013_12_10_ORM-vs-SQL-1-Paging" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/" class="article-date">
+  <time datetime="2015-08-11T23:38:44.856Z" itemprop="datePublished">2015-08-12</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/">ORM vs SQL Part 1 - Paging</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>In this series of posts I want to talk about the real world ramifications of not using an ORM for application development and why falling back to SQL and stored procedures is a poor choice.</p>
+<p>Quite often the argument seems to be that an SQL select and a few joins is simple and effective (which it is), and that ORM&#39;s are a useless abstraction. The problem is that simple selects don&#39;t get you very far, even when creating the CRUDiest of applications.</p>
+<p>In real applications, we have to do paging, sorting (dynamically), joining (dynamically) and filtering (dynamically). That&#39;s just on the read side, not even considering what an ORM can do for you when your writing data. I&#39;m going to go through the abstractions an ORM provide and show how they make life easier for us.</p>
+<p>Some caveats before I go on:</p>
+<ul>
+<li>I&#39;m talking about general application development, web, desktop or mobile doesn&#39;t really matter here.</li>
+<li>I&#39;m talking about general line of business applications. If your working on something more exotic you may have legitimate needs that an ORM doesn&#39;t cater for.</li>
+<li>The ORM I&#39;m using will be nHibernate, but the same applies to all ORM&#39;s.</li>
+<li>I&#39;ll mostly be talking about Sql Server.</li>
+<li>Stored procedures have there place, if your ORM creating a legitimate bottleneck you should feel free to work around it entirely.</li>
+</ul>
+<p>This part goes over paging, <a href="ORM-vs-SQL-2---Ordering">Part Two</a> goes over ordering and <a href="ORM-vs_SQL-3---Filtering">Part Three</a> goes over filtering</p>
+<p>#Paging with an ORM</p>
+<p>Here is an example of paging a list with nHibernate, it&#39;s simple and it works, I don&#39;t even have to bother explaining it</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Session.QueryOver&lt;Product&gt;().Skip(20).Take(10)</span><br></pre></td></tr></table></figure>
+<p>#Paging with SQL</p>
+<p>I&#39;m going to assume Sql Server here but it varies from database to database. Before we go down that path I will also say that database independence is not a good reason to use an ORM.</p>
+<p>A quick Google search for sql paging will give you quite a number of different possibilities. MySQL, for all it&#39;s faults, at least includes the ability to say &quot;LIMIT 20, 10&quot;, which means skip 20, take 10. Those of use working with Sql Server aren&#39;t so lucky, it blows my mind that such a common scenario wasn&#39;t at the forefront of developers minds when Sql Server was first created and they&#39;ve had to add various hacks over the last decade. Now that we can (hopefully) pretend that Sql Server 2000 no longer exists the best option seems to be:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> TOP (@take) <span class="keyword">id</span>, <span class="keyword">name</span></span><br><span class="line"><span class="keyword">FROM</span> (</span><br><span class="line">  <span class="keyword">SELECT</span> <span class="keyword">id</span>, <span class="keyword">name</span>, ROW_NUMBER() <span class="keyword">OVER</span>(<span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="keyword">name</span>) <span class="keyword">as</span> rownumber</span><br><span class="line">  <span class="keyword">FROM</span> products</span><br><span class="line">) <span class="keyword">as</span> <span class="keyword">query</span></span><br><span class="line"><span class="keyword">WHERE</span> query.rownumber &gt; @<span class="keyword">skip</span></span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> query.name</span><br></pre></td></tr></table></figure>
+<p>This has good performance, it&#39;s relatively simple and it works well with dynamic ordering (check), which I&#39;ll get to in part two. This is exactly the sql that nHibernate will generate for you. Another possibility, as of Sql Server 2012 is:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> *</span><br><span class="line"><span class="keyword">FROM</span> products</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="keyword">name</span> <span class="keyword">OFFSET</span> @<span class="keyword">skip</span> <span class="keyword">ROWS</span> <span class="keyword">FETCH</span> <span class="keyword">NEXT</span> @take <span class="keyword">ROWS</span> <span class="keyword">ONLY</span></span><br></pre></td></tr></table></figure>
+<p>While still lacking the elegance of MySQL, it works and is faster than the previous example. Throw in dynamic ordering though (part 2) and the performance goes out the window. There are other possibilities I haven&#39;t covered, the pros and cons of each is worth it&#39;s own blog series, though I won&#39;t be the one writing it (if you know of one, let me know and I will link it here).</p>
+<p>The dumbest one I&#39;ve seen, unfortunately the most common also, is to page on the client side (client being the application, not end user). The idea seems to be that you cache entire result sets and filter/order it in application code. People actually think this performs better, but I&#39;ll save this for a longer rant later.</p>
+<p>#That doesn&#39;t seem too bad</p>
+<p>Well it isn&#39;t too bad but it&#39;s not such a simple query anymore. This extra complexity goes into nearly every query in the application, so it&#39;s a non-trivial amount of extra code to maintain. In later posts we&#39;ll see how this complexity is multiplied by other, equally necessary features.</p>
+<p>Finally, compare it with the simplicity of doing the same in an ORM, which will execute the exact same query and perform the same, all that extra code starts to look pretty meaningless.</p>
+<p>In <a href="ORM-vs-SQL-2---Ordering">part two</a> I&#39;ll take a look at dynamic ordering.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/" data-id="cin1538on000tk4uykxw41o3q" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/orm/">orm</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/sql/">sql</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-2015_07_24_Simple-Abstractions" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/07/24/2015_07_24_Simple-Abstractions/" class="article-date">
+  <time datetime="2015-07-23T14:00:00.000Z" itemprop="datePublished">2015-07-24</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/07/24/2015_07_24_Simple-Abstractions/">Simple Abstractions</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Most of us agree by now that the single responsibility principle is a good idea.
+Small, composable parts are easy to read, write, test and maintain.</p>
+<p>This introduces another issue though, wiring these components together.
+IOC containers do a great job of constructing our object graphs,
+but our components still have to specify their dependencies.</p>
+<p>Writing essentially the same constructor code over and over gets old fast.
+Typically projects will resort to some combination of property injection or the service locater pattern to avoid this.
+Neither of these options is particularly helpful from a code readability or unit testing point of view.</p>
+<p>So how do we get the benefits of the single responsibility principle without the drawbacks?
+First we have to take a step back and look at our interactions.
+Lets look at the interactions of a controller in a typical MVC application.</p>
+<p>##What does a controller do?</p>
+<p>A controller is responsible for coordinating the interaction between the user interface and the rest of the application.</p>
+<p>The user interface is how we interact with the users themselves,
+usually be returning some HTML via a view or some json data.
+Often we will also return some type of message to the user or redirect the user to another page.</p>
+<p>The rest of the application could be just about anything.
+Typically there will be some type of database to read/write from, some sort of logging,
+some sort of message queue, etc.
+The specifics will vary from application to application.</p>
+<p>So let&#39;s see what happens when we model these interactions with the IUser and IApplication interfaces.</p>
+<p>##IUser</p>
+<p>Here is what an IUser interface may look like:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">public interface IUser &#123;</span><br><span class="line">  public string UserName  &#123; get; &#125;</span><br><span class="line">  public int Id &#123; get; set; &#125;</span><br><span class="line">  public string[] Roles &#123; get; set; &#125;</span><br><span class="line"></span><br><span class="line">  public void Notify(string message);</span><br><span class="line">  public void Warn(string message);</span><br><span class="line">  public T Session&lt;T&gt;(string index);</span><br><span class="line">  public ActionResult Redirect();</span><br><span class="line">  public ActionResult Redirect(string location);</span><br><span class="line">  public ActionResult View();</span><br><span class="line">  public ActionResult View(object model);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The first few properties are some general information about the user that the controller will need either directly or indirectly.
+Other components may need this information, but as the coordinator it should be the controller passing it along.</p>
+<p>Next there is the Notify and Warn methods, this is how the controller can communicate with the user.
+A success or failure method would be sent to the user via these methods.
+The actual implementation would store this somewhere and make it available to the view.</p>
+<p>Session is our temporary storage area.
+Because sessions are per user, the IUser interface is the natural place to put it.</p>
+<p>The rest of the methods deal with returning action results.
+Depending on the design you may or may need to return a result from an MVC action.</p>
+<p>##IApplication</p>
+<p>An IApplication interface could look something like this:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">public interface IApplication &#123;</span><br><span class="line">  public void LogMessage(string message);</span><br><span class="line">  public void LogError(string message);</span><br><span class="line">  public void PublishMessage(object message);</span><br><span class="line">  public Query&lt;T&gt; Query&lt;T&gt;();</span><br><span class="line">  public Map&lt;T, U&gt;(T mapFrom);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The log methods are self explanatory.
+PublishMessage will publish the message to a message queue.
+Query<t> will delegate to the CQRS sub system and Map will delegate to automapper.</t></p>
+<p>The actual specifics will vary tremendously from project to project.</p>
+<p>#Single Responsibility Principle</p>
+<p>It is natural to assume that any implementation of these interfaces will violate the single responsibility principle,
+that they would be handling many unrelated tasks.</p>
+<p>This is where the facade pattern comes in.
+An implementation of these interfaces should be a facade only,
+They should contain no real logic, simply pass arguments to a real implementation.</p>
+<p>They only responsibility of these implementations is to delegate:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">public class System : IApplication &#123;</span><br><span class="line">  private readonly ILog Log;</span><br><span class="line">  private readonly IBus Bus;</span><br><span class="line">  private readonly ISession Session;</span><br><span class="line"></span><br><span class="line">  public System(ILog log, IBus bus, ISession session) &#123;</span><br><span class="line">    Log = log;</span><br><span class="line">    Bus = bus;</span><br><span class="line">    Session = Session;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  public void LogMessage(string message) &#123;</span><br><span class="line">    Log.LogMessage(message);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  /* ... */</span><br><span class="line"></span><br><span class="line">  public Query&lt;T&gt; Query&lt;T&gt;() &#123;</span><br><span class="line">    return Session.Query&lt;T&gt;();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>So now we have a system with many small, testable components.
+Our controllers only have two dependencies to worry about.
+And finally, our IOC container can construct our object graph purely from constructors.</p>
+<p>We&#39;ve got all the benefits of SRP and IOC, with none of the downsides.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2015/07/24/2015_07_24_Simple-Abstractions/" data-id="cin1538qu001ok4uygyho71f5" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2015/07/24/2015_07_24_Simple-Abstractions/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/architecture/">architecture</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/c/">c#</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-2015_07_09-Interfaces-for-Data" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/07/09/2015_07_09-Interfaces-for-Data/" class="article-date">
+  <time datetime="2015-07-08T14:00:00.000Z" itemprop="datePublished">2015-07-09</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/07/09/2015_07_09-Interfaces-for-Data/">Simple Interfaces for Data</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Interfaces seem to be a feature that is both under used and over used.
+Typically they get over used for everything that will have unit tests and dependency injection.
+There are plenty of arguments against adding unnecessary interfaces like this,
+but that is not the case I&#39;m trying to make today.</p>
+<p>Instead I won&#39;t to show some uses for interfaces that have nothing to do with architecture,
+that will never see an IOC container or unit test but will still have an impact on readability
+maintainability and performance.</p>
+<p>##INameValuePair</p>
+<p>Name value pairs are extremely common, just about every select list,
+radio box, check box, etc. relies on one, either explicitly or implicitly.
+Just today though, I came across some code that used reflection to get those values.
+Other times I&#39;ve seen forced inheritance hierarchies for the same result.
+A much simpler alternative is to use an interface:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public interface INameValuePair &#123;</span><br><span class="line">  public int Id &#123; get; &#125;</span><br><span class="line">  public string Name &#123; get; &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>This all there is to it, no need for reflection and attributes,
+just a simple interface. A couple of examples:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">public class Country : INameValuePair &#123;</span><br><span class="line">  public int Id &#123; get; set; &#125;</span><br><span class="line">  public string Name &#123; get; set; &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">public class ProductCategory : INameValuePair, IBelongToTenant &#123;</span><br><span class="line">  public int Id &#123; get; set; &#125;</span><br><span class="line">  public string CategoryName &#123; get; set; &#125;</span><br><span class="line">  public string INameValuePair.Name &#123; get &#123; return CategoryName; &#125; &#125;</span><br><span class="line">  pulic int TenantId &#123; get; set; &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Even this simple example demonstrates a few things.
+The first is that, while using inheritance would achieve he same result,
+it is a forced relationship.
+Just because a country and a product category have two properties in common,
+an Id and a name,  doesn&#39;t mean they are related in any way.</p>
+<p>The ProductCategory also has two two interfaces.
+When you start creating interfaces like this a class will quite often fit into more than one.
+Trying to fit this into some sort of inheritance hierarchy will only make things more complicated
+and harder to adapt in future.</p>
+<p>The final benefit over inheritance is that the interface doesn&#39;t have to be a named match.
+If ProductCategory was inheriting from a base class, it would always have a name property.
+This means that the you&#39;ve run into a situation where the view is forcing it&#39;s constraints up the stack,
+which is never a good situation to be in.</p>
+<p>With an explicitly defined interface we don&#39;t have to care about what the method is called,
+only that the interface is implemented.</p>
+<p>##IBelongToTenant</p>
+<p>Multi tenant applications are very common, and the implementation seeps into the data.
+Things have to belong to a tenant, otherwise the data is global.
+Another very simple interface:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">public interface IBelongToTenant &#123;</span><br><span class="line">  public int TenantId &#123; get; set; &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">public class ProductCategory : IBelongToTenant &#123;</span><br><span class="line">  public int Id &#123; get; set; &#125;</span><br><span class="line">  public string Name &#123; get; set; &#125;</span><br><span class="line">  pulic int TenantId &#123; get; set; &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Once this information encoded into the class through an interface some clever things can be done.
+Here is an extension method that will filter for the current tenant:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">public static class TenantExtensions &#123;</span><br><span class="line">  public static IQueryable&lt;T&gt; FilterTenant&lt;T&gt;(this IQueryOver&lt;T&gt; query) where T : IBelongToTenant &#123;</span><br><span class="line">    query = query.Where(x =&gt; x.TenantId == CurrentTenantId);</span><br><span class="line">    return query;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Querying a list of ProductCategory would then look like:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">var pc = ISession.Query&lt;ProductCategory&gt;()</span><br><span class="line">            .FilterTenant()</span><br><span class="line">            .ToList();</span><br></pre></td></tr></table></figure>
+<p>It doesn&#39;t save a lot of code, but it does make it more clear.
+A common request I see is for some sort multi tiered tenanting,
+where the behavior has to match the corporate structure (don&#39;t ask me why, I just have to implement it).
+When the logic is encapsulated like this there is only one place to change
+for it to be globally applied.</p>
+<p>It also leaves a lot of room for automagic code.
+A global query filter could be applied to any query on an IBelongToTenant class for instance,
+the method would not need to be called at all.</p>
+<p>##ITaggable</p>
+<p>The final common item is a tagging system.
+A BlogPost and a BlogComment might have tags for instance,
+but again, this doesn&#39;t mean they should share a base class.
+Our logic can still be encapsulated though:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">public class Tag &#123;</span><br><span class="line">  public int Id &#123; get; set; &#125;</span><br><span class="line">  public string Name &#123; get; set; &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">public interface ITaggable &#123;</span><br><span class="line">  public List&lt;Tag&gt; Tags &#123; get; &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">public class BlogPost : ITaggable &#123;</span><br><span class="line">  public int Id &#123; get; set; &#125;</span><br><span class="line">  public string Content &#123; get; set; &#125;</span><br><span class="line">  public List&lt;Tag&gt; Tags &#123; get; set; &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Similar to the IBelongToTenant extension method but more complex:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">public static class TaggableExtensions &#123;</span><br><span class="line">  public static IQueryable&lt;T&gt; FilterTags&lt;T&gt;(this IQueryOver&lt;T&gt; query, IEnumerable&lt;string&gt; tags) where T : ITaggable &#123;</span><br><span class="line">    foreach (var tag in tags)</span><br><span class="line">      query = query.Where(x =&gt; x.Tags.Contains(y =&gt; y.Name == tag));</span><br><span class="line">    return query;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Again the code is more readable:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">var pc = ISession.Query&lt;ProductCategory&gt;()</span><br><span class="line">            .FilterTags(queryModel.Tags)</span><br><span class="line">            .ToList();</span><br></pre></td></tr></table></figure>
+<p>In this case there are some likely performance optimizations too,
+but optimizing the extension method will optimize all ITaggable queries.</p>
+<p>##Nothing Amazing</p>
+<p>None of these examples are particularly fancy or noteworthy,
+just some simple ideas to make code readable and maintainable.</p>
+<p>Yet time and again I see much more complicated solutions to achieve the same results.
+Developers need to get over our habit trying to fit everything into a hierarchal model.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2015/07/09/2015_07_09-Interfaces-for-Data/" data-id="cin1538qu001nk4uyj19ubuf7" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2015/07/09/2015_07_09-Interfaces-for-Data/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/architecture/">architecture</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/c/">c#</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-2015_07_03-Vim-errorformat-Demystified" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/07/03/2015_07_03-Vim-errorformat-Demystified/" class="article-date">
+  <time datetime="2015-07-02T14:00:00.000Z" itemprop="datePublished">2015-07-03</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/07/03/2015_07_03-Vim-errorformat-Demystified/">Vim errorformat Demystified</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Vim&#39;s errorformat is on of the more arcane part&#39;s of vim.
+It has constantly had me tearing my hair out,
+if you&#39;ve found this page there&#39;s a good chance you are too.
+Judging from the google results I&#39;ve seen this is quite a common reaction.</p>
+<p>Simple, single line formats are easy enough to work out with a little trial and error,
+the problems start mounting when you need multiple formats simultaneously,
+or worse, multi line error formats.</p>
+<p>I believe this is more to do with the documentation than anything else.
+Despite being extensive and containing many examples it actually does very little to explain things.
+Once you understand a few key things though, it&#39;s actually much simpler than it seems.</p>
+<p>##An Array of Formats</p>
+<p>The efm variable is a csv of error formats.
+Personally I prefer to visualize it as an array.
+Let&#39;s look at an example from vim&#39;s documentation example like:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">:<span class="keyword">set</span> efm=%EError\ %n,%Cline\ %<span class="keyword">l</span>,%Ccolumn\ %<span class="keyword">c</span>,%Z%<span class="keyword">m</span></span><br></pre></td></tr></table></figure>
+<p>You might intuitively think that this is a single error format, which is exactly what I thought.
+It is in fact four completely separate error format&#39;s, delineated by commas.
+Vim will loop through each pattern and see if the current line matches it, breaking if it finds a match.</p>
+<p>Let me repeat that, these are four separate error formats,
+understanding this was my eureka moment, when I finally understood how it worked.
+The above format could be written as:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">:<span class="keyword">set</span> efm=%Cline\ %<span class="keyword">l</span>,%Ccolumn\ %<span class="keyword">c</span>,%Z%<span class="keyword">m</span>,%EError\ %n</span><br></pre></td></tr></table></figure>
+<p>Which would work exactly the same, at least in this limited scenario.
+The format I prefer however is this:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> efm+=%EError\ %n</span><br><span class="line"><span class="keyword">set</span> efm=%Cline\ %<span class="keyword">l</span></span><br><span class="line"><span class="keyword">set</span> efm+=%Ccolumn\ %<span class="keyword">c</span></span><br><span class="line"><span class="keyword">set</span> efm+=%Z%<span class="keyword">m</span></span><br></pre></td></tr></table></figure>
+<p>This allows the precedence order to be adjusted by moving the lines up and down.
+When you have to deal with multiple error formats this is incredibly important.</p>
+<p>##Step by Step</p>
+<p>Now for a real world example, recently I wanted to write a format that works with the nunit/nant combo,
+the output looks like this:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[exec] <span class="number">1</span>) Test Failure : TestClass.IsTrue</span><br><span class="line">[exec]   Custom error message goes here.</span><br><span class="line">[exec]   Expected: True</span><br><span class="line">[exec]   But <span class="keyword">wa</span><span class="variable">s:</span>  False</span><br><span class="line">[exec]</span><br><span class="line">[exec] at TestClass.IsTrue() in <span class="keyword">c</span>:\projects\book projects\src\app\Test.<span class="keyword">c</span><span class="variable">s:l</span> ine <span class="number">9</span></span><br></pre></td></tr></table></figure>
+<p>The first step to creating an error format is to get the file name and line:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> efm=%.%#\ at\ %.%#\ in\ %<span class="keyword">f</span>:<span class="built_in">line</span>\ %<span class="keyword">l</span></span><br></pre></td></tr></table></figure>
+<p>This is saying:</p>
+<ol>
+<li>Find any text (%.%# is a wild card) until we get to &quot; at &quot;.</li>
+<li>Then any text until we get to &quot; in &quot;.</li>
+<li>Then the filename (%f) followed by a colon (:)</li>
+<li>Finally the word &quot;line &quot; (whitespace sensitive) followed by the line number (%l)</li>
+</ol>
+<p>If it&#39;s run against a failing test then the output will be:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">47 src\app\Test.cs:9:</span><br></pre></td></tr></table></figure>
+<p>This works, we can easily jump to the file and location but there is no other information.
+To improve this we have to use a multiple formats and use multi line syntax.
+First we update the format:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> efm=%Z%.%#\ at\ %.%#\ in\ %<span class="keyword">f</span>:<span class="built_in">line</span>\ %<span class="keyword">l</span></span><br></pre></td></tr></table></figure>
+<p>&quot;%Z&quot; has been added to the start.
+This means it will only be considered if a flag is set indicating we are in the middle of a multi line error.
+It is also considered the end of the multi line error, the flag is turned off if this is a match.
+Running it now will not produce a match.</p>
+<p>To set the multi line flag we need to add another format:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> efm=%E%.%#Test\ Failure\ :%.%#</span><br><span class="line"><span class="keyword">set</span> efm+=%Z%.%#\ at\ %.%#\ in\ %<span class="keyword">f</span>:<span class="built_in">line</span>\ %<span class="keyword">l</span></span><br></pre></td></tr></table></figure>
+<p>The second line is mostly the same (note the += at the start).
+The first line is a format saying the following:</p>
+<ol>
+<li>Set the multi line flag (%E) if this is a match</li>
+<li>Find any text until we get to &quot;Test Failure : &quot;</li>
+<li>Followed by any text.</li>
+</ol>
+<p>If we run this now it still won&#39;t work.
+The multi line flag is turned off if a non matching line is found.
+The simplest way to do this is to match any line:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> efm=%E%.%#Test\ Failure\ :%.%#</span><br><span class="line"><span class="keyword">set</span> efm+=%Z%.%#\ at\ %.%#\ in\ %<span class="keyword">f</span>:<span class="built_in">line</span>\ %<span class="keyword">l</span></span><br><span class="line"><span class="keyword">set</span> efm+=%C%.%#</span><br></pre></td></tr></table></figure>
+<p>The %C means it only matches if the multi line flag is on.
+It then uses a wild card to match anything.
+Because this matches practically anything it is placed last, giving it the lowest precedence.
+If the second and third lines were switched then every line after the first error would be considered part of the error,
+ the file name and line number would never get matched.</p>
+<p>The last part is to get all the information in between, we add a fourth pattern:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> efm=%E%.%#Test\ Failure\ :%.%#</span><br><span class="line"><span class="keyword">set</span> efm+=%Z%.%#\ at\ %.%#\ in\ %<span class="keyword">f</span>:<span class="built_in">line</span>\ %<span class="keyword">l</span></span><br><span class="line"><span class="keyword">set</span> efm+=%C%.%#[exec]\ %#%<span class="keyword">m</span></span><br><span class="line"><span class="keyword">set</span> efm+=%C%.%#</span><br></pre></td></tr></table></figure>
+<p>The added third line is saying:</p>
+<ol>
+<li>Only apply this if the multi line flag is set (%C)</li>
+<li>Find any text up to [exec]</li>
+<li>Find any space characters</li>
+<li>Append the rest of the line to the error message (%m)</li>
+</ol>
+<p>The output will look like:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">47 src\app\Test.cs:9: Custom error message goes here. Expected: true But was: false</span><br></pre></td></tr></table></figure>
+<p>To make this easier to manage it is a good idea to keep the error line it is matching in a comment:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">"[exec] 1) Test Failure : TestClass.IsTrue</span></span><br><span class="line"><span class="keyword">set</span> efm=%E%.%#Test\ Failure\ :%.%#</span><br><span class="line"><span class="comment">"[exec] at TestClass.IsTrue() in c:\projects\book projects\src\app\Test.cs:l ine 9</span></span><br><span class="line"><span class="keyword">set</span> efm+=%Z%.%#\ at\ %.%#\ in\ %<span class="keyword">f</span>:<span class="built_in">line</span>\ %<span class="keyword">l</span></span><br><span class="line"><span class="comment">"[exec]   Custom error message goes here.</span></span><br><span class="line"><span class="comment">"[exec]   Expected: True</span></span><br><span class="line"><span class="comment">"[exec]   But was:  False</span></span><br><span class="line"><span class="keyword">set</span> efm+=%C%.%#[exec]\ %#%<span class="keyword">m</span></span><br><span class="line"><span class="comment">"[exec]</span></span><br><span class="line"><span class="keyword">set</span> efm+=%C%.%#</span><br></pre></td></tr></table></figure>
+<p>##More Errors</p>
+<p>The above assumes that nunit errors are all we care about but there are many others,
+from the compiler itself and the build script itself being the two obvious ones.
+If the build script itself throws an error it looks like this:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">c:\projects\project1\nant.build(23,5):</span><br><span class="line">Error loading buildfile.</span><br><span class="line"></span><br><span class="line">    The &apos;cscvffe&apos; start tag on line 11 position 4 does not match the end tag of &apos;csc&apos;. Line 23, position 5.</span><br></pre></td></tr></table></figure>
+<p>The error format for this is rather straight forward:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">"c:\projects\project1\nant.build(23,5):</span></span><br><span class="line"><span class="keyword">set</span> efm=%E%<span class="keyword">f</span>(%<span class="keyword">l</span>\\,%<span class="keyword">c</span>):</span><br><span class="line"><span class="comment">"Error loading buildfile.</span></span><br><span class="line"><span class="comment">"</span></span><br><span class="line"><span class="comment">"    The 'cscvffe' start tag on line 11 position 4 does not match the end tag of 'csc'. Line 23, position 5.</span></span><br><span class="line"><span class="keyword">set</span> efm+=%C%<span class="keyword">m</span></span><br></pre></td></tr></table></figure>
+<p>To get it to work with other errors though, it need to be arranged in order of specificity:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">"[exec] 1) Test Failure : TestClass.IsTrue</span></span><br><span class="line"><span class="keyword">set</span> efm=%E%.%#Test\ Failure\ :%.%#</span><br><span class="line"><span class="comment">"c:\projects\project1\nant.build(23,5):</span></span><br><span class="line"><span class="keyword">set</span> efm=%E%<span class="keyword">f</span>(%<span class="keyword">l</span>\\,%<span class="keyword">c</span>):</span><br><span class="line"><span class="comment">"[exec] at TestClass.IsTrue() in c:\projects\book projects\src\app\Test.cs:l ine 9</span></span><br><span class="line"><span class="keyword">set</span> efm+=%Z%.%#\ at\ %.%#\ in\ %<span class="keyword">f</span>:<span class="built_in">line</span>\ %<span class="keyword">l</span></span><br><span class="line"><span class="comment">"[exec]   Custom error message goes here.</span></span><br><span class="line"><span class="comment">"[exec]   Expected: True</span></span><br><span class="line"><span class="comment">"[exec]   But was:  False</span></span><br><span class="line"><span class="keyword">set</span> efm+=%C%.%#[exec]\ %#%<span class="keyword">m</span></span><br><span class="line"><span class="comment">"Error loading buildfile.</span></span><br><span class="line"><span class="comment">"</span></span><br><span class="line"><span class="comment">"    The 'cscvffe' start tag on line 11 position 4 does not match the end tag of 'csc'. Line 23, position 5.</span></span><br><span class="line"><span class="keyword">set</span> efm+=%C%<span class="keyword">m</span></span><br><span class="line"><span class="comment">"[exec]</span></span><br><span class="line"><span class="keyword">set</span> efm+=%C%.%#</span><br></pre></td></tr></table></figure>
+<p>The start format goes near the top because it signifies the start of a new error no matter what.
+The message line is very generic though, so it has to go right near the bottom.</p>
+<p>Error formats, and the quick list itself is one of those features that really makes vim shine,
+It just needs some customization for your particular tool set.
+Hopefully I&#39;ve straightened out some misconceptions here.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2015/07/03/2015_07_03-Vim-errorformat-Demystified/" data-id="cin1538qu001kk4uypge3s6zr" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2015/07/03/2015_07_03-Vim-errorformat-Demystified/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/nunit/">nunit</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/vim/">vim</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-2015_03_14_Strict-Typing-is-More-Dynamic" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/03/14/2015_03_14_Strict-Typing-is-More-Dynamic/" class="article-date">
+  <time datetime="2015-03-13T13:00:00.000Z" itemprop="datePublished">2015-03-14</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/03/14/2015_03_14_Strict-Typing-is-More-Dynamic/">Strict Typing is More Dynamic</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>So often the focus of the strongly typed vs dynamic typed debate is about compile time, or lack thereof.
+Sure, strongly typed languages offer a range of compile time checks not possible in their dynamic counterparts,
+but less talked about are dynamic, runtime possibilities that a rich type system makes possible.</p>
+<p>Most modern, strongly typed, non-system languages (java, c#, others) come with a reflection API,
+a method of getting rich type information at runtime.
+This opens up a world of possibilities to reduce code and decouple components.
+Today I&#39;ll look at a few examples of these.</p>
+<p>##Dependency Injection</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public class Foo &#123;</span><br><span class="line">  public Foo(SomeDependency sd, SomeOtherDependeency sod) &#123;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The first one that most programmers are probably familiar with is dependency injection.
+In a strongly typed language, an IOC container can inspect a type,
+find what other types it depends upon and use the information to construct an object.</p>
+<p>In the above code, the IOC container will see that the Foo class has two dependencies.
+At runtime it can instantiate an instance class by invoking the constructor and providing the correct dependencies.
+It can provide different dependencies depending on a range of factors, from configuration to url parameters.</p>
+<p>A multi tenant application, for example,
+may have different implementations of SomeDependency for differing configurations.
+The IOC container can look at the URL and provide the correct implementation for that tenant.
+The controller is completely oblivious to this so it&#39;s code is simpler and more maintainable.</p>
+<p>##The Mediator Pattern</p>
+<p>The mediator pattern is a useful technique to decouple software components.
+Examples would be CQRS (such as <a href="https://github.com/jbogard/MediatR" target="_blank" rel="external">mediatr</a>) and pub/sub like with <a href="http://masstransit-project.com/" target="_blank" rel="external">mass transit</a>.
+In both cases the calling application knows nothing of the implementor, if one exists at all.
+Here is an example of a product controller using a mediator:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">public class DiscountProductCommand : ICommand &#123;</span><br><span class="line">  public int ProductId &#123; get; set;&#125;</span><br><span class="line">  public public double DiscountAmmount &#123; get; set; &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">public classs ProductController &#123;</span><br><span class="line"></span><br><span class="line">  private readonly IMediator Mediator;</span><br><span class="line">  private readonly IUser User;</span><br><span class="line"></span><br><span class="line">  public ProductController(IMediator mediator, IUser user) &#123;</span><br><span class="line">    Mediator = mediator;</span><br><span class="line">    User = user;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  public ActionResult ApplyDiscount(DiscountProductCommand command) &#123;</span><br><span class="line">    if (ModelState.IsValid) &#123;</span><br><span class="line">      Mediator.execute(command);</span><br><span class="line">      User.Notify(&quot;Discount has been applied&quot;);</span><br><span class="line">      return RedirectToAction(&quot;Home&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">    return View(command);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">public class ProductExecutor : IExecute&lt;DiscountProductCommand&gt; &#123;</span><br><span class="line">  public void Execute(DiscountProductCommand command) &#123;</span><br><span class="line">    //code goes here</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>A runtime bootstrapping process will scan the assembly for all types that implement IExecute<something>,
+automagically wiring up the application with full type safety.
+This type of loose coupling of components makes software a joy to maintain and extend.</something></p>
+<p>##Rich Metadata</p>
+<p>Reflection APIs aren&#39;t limited to just names and types either,
+rich meta data can be added with attributes.
+The functionality of these attributes can vary,
+from simple simple information to full blown AOP designs.
+Here are a couple of examples:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">public class ProductVM &#123;</span><br><span class="line">  public int? Id &#123; get; set; &#125;</span><br><span class="line"></span><br><span class="line">  [Required]</span><br><span class="line">  public string Name &#123; get; set; &#125;</span><br><span class="line"></span><br><span class="line">  [DisplayName(&quot;SKU&quot;)]</span><br><span class="line">  [Required]</span><br><span class="line">  public string Code &#123; get; set; &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The DisplayName attribute is used by a form generator to create the correct label
+and the validator to generate the correct error message.
+The validator also knows which fields are required,
+in this simple case all validation is done without writing any real code.</p>
+<p>AOP is a more advanced technique to apply cross cutting concerns with less code.
+It is highly dynamic and depends heavily on strong type information.
+Here is an example of how rich logging can be automagically applied:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[EnableLogging]</span><br><span class="line">public class UserAPI &#123;</span><br><span class="line"></span><br><span class="line">  public List&lt;User&gt; SearchUsers(UserSeearchQuery query) &#123; &#125;</span><br><span class="line"></span><br><span class="line">  public void ChangePassword(int userId, [SkipLog]string oldPassword, [SkipLog]string newPassword) &#123; &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Using an AOP framework a proxy interceptor can be created.
+The interceptor automatically serializes and logs the method called (and the parameters), the current user, etc.
+This is great information to have when a bug is reported
+because all the information needed to replicate the issue can be found in the log.
+Further refinement can be made, such as avoiding sensitive information (passwords, cc numbers) from ending up log files.
+The SkipLog attribute allows us to avoid logging sensitive information while still getting the
+benefits of the interceptor.</p>
+<p>##Conclusion</p>
+<p>These are examples of how strongly typed languages can defer many decisions until runtime
+and respond to a range of environmental factors to build the execution path.
+I would argue that these approaches make strict typing more dynamic and adaptable than dynamic ones,
+which usually have to resort to a lot of manual wiring and &quot;stringly&quot; typing to achieve the same results.</p>
+<p>Languages like ruby have become nearly synonymous with &quot;convention over configuration&quot;,
+yet they are less capable of supporting it than there strongly types counterparts.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2015/03/14/2015_03_14_Strict-Typing-is-More-Dynamic/" data-id="cin1538qu001ik4uyeebn1syy" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2015/03/14/2015_03_14_Strict-Typing-is-More-Dynamic/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/c/">c#</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/general-programming/">general programming</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-2015_03_13_Powershell-is-a-Joke" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/03/13/2015_03_13_Powershell-is-a-Joke/" class="article-date">
+  <time datetime="2015-03-12T13:00:00.000Z" itemprop="datePublished">2015-03-13</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/03/13/2015_03_13_Powershell-is-a-Joke/">Powershell is a Joke</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Powershell is a joke, at least as far as build systems are concerned.
+The concepts behind it sound great,
+it&#39;s billed as the one true scripting language for everything windows,
+but it falls flat on it&#39;s face in the real world.</p>
+<p>I&#39;ve spent a couple of days trying to setup a rather simple build.
+The requirements for this build are about as simple as you could hope for,
+compile the app, prepare the deployment, twiddle the web config
+and finish with an xcopy deploy.</p>
+<p>Should be simple right? The following is a chronicle of my exasperation,
+with the occasional nant snippet for comparison.</p>
+<p>#Clean and Init</p>
+<p>Managing the build directory is the &quot;hello world&quot; of creating a build.
+Just creating the build directory lead to the first gotcha:</p>
+<pre><code>New-Item .\build -type directory
+</code></pre><p>This works fine the first time, but subsequent builds will fail because the directory exists.
+The force parameter is needed:</p>
+<pre><code>New-Item .\build -type directory -force
+</code></pre><p>Apparently you have to <em>force</em> powershell to <em>not</em> create a new directory.
+When I create a directory, I just want to make sure it&#39;s there.
+Failing on an existing directory is not a sensible default.
+How does nant do it:</p>
+<pre><code>&lt;mkdir dir=&quot;build&quot; /&gt;
+</code></pre><p>Much less cryptic.
+Let&#39;s move onto clean, surely an advanced scripting language can delete a directory right?</p>
+<pre><code>Remove-Item -path .\build\
+</code></pre><p>Nope this prompts the user, exactly the sort of interactivity I don&#39;t want.
+I have to tell it to delete all the files first:</p>
+<pre><code>Remove-Item -path .\build\  -Include * -Recurse
+</code></pre><p>This is the best we can do and it still has a few caveats.
+It will fail if the directory doesn&#39;t exist.
+It will also fail if explorer is open in one of the directories.
+It will fail the first time anyway, it will delete all files and leave the directories.
+The second time it will work, the third time it will fail because the directory is missing.
+Not the sort of consistency you want in your build system.
+How does nant do it?</p>
+<pre><code>&lt;delete dir=&quot;build&quot; /&gt;
+</code></pre><p>Always works, doesn&#39;t fail if the directory is missing.</p>
+<p>#Copying Files</p>
+<p>So it&#39;s not great at directories,
+how does it handle the next common task, copying files?</p>
+<pre><code>Copy-Item .\Rtg.AssetManagement.Web\* .\build\web -recurse -force
+</code></pre><p>So far so good,
+though defaulting to recursing and overwriting existing files would make more sense in a build system.
+What if I only want to exclude .html files?</p>
+<pre><code>Copy-Item .\src\* .\build\ -recurse -force -Include &quot;.html&quot;
+</code></pre><p>Kind of, it only copies .html files in the base directory.
+Likewise, exclude will only filter on the base directory:</p>
+<pre><code>Copy-Item .\src\* .\build\ -recurse -force -Exclude &quot;.html&quot;
+</code></pre><p>Anything &quot;advanced&quot; requires getting a bit complicated (not my code, one I found online):</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">$exclude = @(&quot;main.js&quot;)</span><br><span class="line">$excludeMatch = @(&quot;app1&quot;, &quot;app2&quot;, &quot;app3&quot;)</span><br><span class="line">[regex] $excludeMatchRegEx = ‘(?i)‘ + (($excludeMatch |foreach &#123;[regex]::escape($_)&#125;) –join “|”) + ‘’</span><br><span class="line">Get-ChildItem -Path $from -Recurse -Exclude $exclude |</span><br><span class="line">  where &#123; $excludeMatch -eq $null -or $_.FullName.Replace($from, &quot;&quot;) -notmatch $excludeMatchRegEx&#125; |</span><br><span class="line">      Copy-Item -Destination &#123;</span><br><span class="line">          if ($_.PSIsContainer) &#123;</span><br><span class="line">            Join-Path $to $_.Parent.FullName.Substring($from.length)</span><br><span class="line">          &#125; else &#123;</span><br><span class="line">            Join-Path $to $_.FullName.Substring($from.length)</span><br><span class="line">          &#125;</span><br><span class="line">        &#125; -Force -Exclude $exclude</span><br></pre></td></tr></table></figure>
+<p>Quite frankly, I don&#39;t understand powershell enough to tell you what this is doing.
+It is extremely obfuscated though, especially compared to the nant equivalent:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;copy todir=&quot;build&quot;&gt;</span><br><span class="line">  &lt;fileset basedir=&quot;src&quot;&gt;</span><br><span class="line">    &lt;include name=&quot;*.html&quot; /&gt;</span><br><span class="line">  &lt;/fileset&gt;</span><br><span class="line">&lt;/copy&gt;</span><br></pre></td></tr></table></figure>
+<p>The real kicker is that the complexity of the nant script stays relatively flat as well,
+multiple base directories, complicated include/exclude functionality,
+It all stays simple and understandable.
+The powershell equivalent quickly ramps up in complexity.</p>
+<p>#Not Built for Purpose</p>
+<p>Is powershell a dud? For build purposes I would say yes.
+It&#39;s overly complicated, even for simple tasks,
+and the default behavior just does not do what I want.
+Compared to nant it is downright cryptic.</p>
+<p>I can see it&#39;s usefulness, I can see why the defaults are the way they are.
+I can see how sys admins might make good use of it.
+I can see how exposing powershell endpoints to my apps could make administration easier.</p>
+<p>It is terrible for building software though.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2015/03/13/2015_03_13_Powershell-is-a-Joke/" data-id="cin1538qe001gk4uyji0wk0j8" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2015/03/13/2015_03_13_Powershell-is-a-Joke/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/build/">build</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/nant/">nant</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/powershell/">powershell</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-2015_03_12_PSake-First-Impressions" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/03/12/2015_03_12_PSake-First-Impressions/" class="article-date">
+  <time datetime="2015-03-11T13:00:00.000Z" itemprop="datePublished">2015-03-12</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2015/03/12/2015_03_12_PSake-First-Impressions/">PSake First Impressions</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>##Why</p>
+<p>NAnt has been my go to build tool for nearly a decade now.
+Over the years I&#39;ve dabled with it&#39;s inferior clone, msbuild,
+make, cmake, qmake, rake, jake and probably others that I&#39;ve forgotten,
+but NAnt has remained my tool of choice.</p>
+<p>It&#39;s always had just the right feature set for nearly everything I needed,
+as well as the right limitations, it&#39;s possible to screw up a NAnt build,
+but it takes some effort.
+With a full scripting language things can become a lot hairier a lot quicker.
+Other common arguments for switching, like the angle bracket tax,
+I&#39;ve never found particularly convincing.
+Sure NAnt can be verbose, but it isn&#39;t too bad once you get away from contrived examples.</p>
+<p>Recently though, I wanted to create a build for a new (old) project and NAnt seems to have fallen behind the times,
+not completely abandoned, but on life support.
+The biggest issue for me is that it hasn&#39;t yet made the transition to the world of nuget.
+There are packages, but the seem to be lacking features, ZipTask for instance.
+More importantly it seems to have all but lost the mind share it once had,
+not so much to msbuild, but to newer tools like Fake and PSake.
+Convincing others of NAnts virtues is an uphill battle these days,
+one I&#39;m sick of fighting.</p>
+<p>I thought it might finally be time to look at some newer tools.
+After a bit of research PSake turned out to be the most promising.</p>
+<p>##The Good</p>
+<p>By far the best thing about PSake is it&#39;s simplicity.
+It is really just a way to organize sub scripts and run them in order of dependency,
+with a bit of command line parsing and property organisation of the side.
+This is a bit off putting when your used to a feature packed framework like NAnt or MSBuild but I think it&#39;s a good thing overall.</p>
+<p>With other developer tools the world is moving away from frameworks in favor of smaller libraries that are combined ad-hoc.
+The recent change of direction of angularjs shows why this is a good thing,
+your not left at the whims of the framework developers changing direction or abandoning the project.
+The project might not be very active on github, but that&#39;s because there isn&#39;t much to do.</p>
+<p>##The Bad</p>
+<p>The biggest downside is also it&#39;s simplicity. NAnt contains a lot of functionality out of the box and PSake doesn&#39;t try to compete.
+Not to say that equivaent functionality isn&#39;t possible,
+but if you have have older NAnt builds and your looking for a drop in replacement then PSake isn&#39;t it.</p>
+<p>The first big gotcha I found with PSake is the weird property system.
+When I set up my builds there are 3 places that properties can come from.</p>
+<ol>
+<li>The script itself. These are the &quot;sensible defaults&quot; for most developers.</li>
+<li>A file (selected by the command line). This allows me to have different settings on multiple branches.</li>
+<li>The command line. This is for the CI server and to override any specific setting I need to.</li>
+</ol>
+<p>There is almost definitely a way to do this in PSake, but it certainly isn&#39;t intuitive.</p>
+<p>The other issue, and this is a much bigger one, is powershell itself.
+I intend to go into this in another post, but until then here is the TLDR of why powershell sucks for builds:</p>
+<ul>
+<li>On error resume next. For some reason this anti-pattern was imported from the vb world. Everyone loves silent failures right?</li>
+<li>Every command has to be wrapped in PSakes Exec()</li>
+<li>Built in file operations are worse than NAnt.</li>
+</ul>
+<p>And this is just a short list that I&#39;ve found in my early expiriments, given some of those design decisions I&#39;m not sure what else to expect in future.</p>
+<p>##Conclusion</p>
+<p>If I had to sum up PSake I would say that it&#39;s a good library built on a dodgy foundation. There is certainly a lot of potential there, but until powerhsell libraries improve it is not ready for primae time.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2015/03/12/2015_03_12_PSake-First-Impressions/" data-id="cin1538qe001dk4uys9vbr4ou" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2015/03/12/2015_03_12_PSake-First-Impressions/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/build/">build</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/nant/">nant</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/powershell/">powershell</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/psake/">psake</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-2014_09_03_Test-Ignorance" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2014/09/03/2014_09_03_Test-Ignorance/" class="article-date">
+  <time datetime="2014-09-02T14:00:00.000Z" itemprop="datePublished">2014-09-03</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/09/03/2014_09_03_Test-Ignorance/">Test Ignorance</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Every unit test framework I can think of comes with a way to ignore tests,
+usually it&#39;s as simple as adding an attribute to the test.
+While I was thinking of what syntax to use for ignore in <a href="https://github.com/flukus/AAATest" target="_blank" rel="external">AAATest</a>,
+I starting wondering if it should be a feature at all.</p>
+<p>The biggest problem with ignored unit tests is that there is nothing compelling anyone to turn them back on. Once they are ignored they have a tendency to stay ignored forever. A test can stay in an ignored state for years without anyone noticing or caring. The person who decided to ignore it in the first place could be long gone.</p>
+<p>At the moment I am leaning towards not providing a mechanism to ignore tests(and not just because it&#39;s the easiest thing to do). It would force the user to either delete or comment out the test.</p>
+<p>Deleting would obviously force you to consider if the test would really be needed in future. Deleting is something that we don&#39;t do lightly, only when we are absolutely sure. Commenting is often used as a soft delete, many a person has argued that if code is commented out then it should be deleted. Does this rule follow for unit tests? I&#39;m still not sure but I&#39;m leaning toward yes. On a side note, I wonder if it&#39;s possible to create an NDepend rule that fails if code is commented?</p>
+<p>The only functional difference between commenting and ignoring is that commented code does not have any maintenance overhead. If your ignoring the test then is paying the maintenance cost for it worthwhile? Only if you plan to enable it again. If your ignoring a test for long enough that it gets out of sync with the code, should it be deleted? Absolutely.</p>
+<p>The project I&#39;m working on at the moment has a failing test, it is expected to fail and something that I intend to work on soon. In this case I should have been working in a branch and wasn&#39;t. By the time the branch is ready to be pulled back in then the test should be passing. A branch is the correct place for incomplete code and is therefore allowed to contain failing tests. If your code is in an incomplete state for long enough that you want to ignore tests then you really should be working on a branch anyway.</p>
+<p>My current, though not staunchly held, opinion is that tests should be deleted rather than ignored and that being able to ignore tests is a hack for poor SCM usage. Until someone can provide me with a better argument <a href="https://github.com/flukus/AAATest" target="_blank" rel="external">AAATest</a> will not be able to ignore tests.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2014/09/03/2014_09_03_Test-Ignorance/" data-id="cin1538py001bk4uyjhh5159k" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2014/09/03/2014_09_03_Test-Ignorance/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AAATest/">AAATest</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/unit-test/">unit test</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-2014_07_24_8-Biggest-Mistakes-of-Application-Architecture" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2014/09/02/2014_07_24_8-Biggest-Mistakes-of-Application-Architecture/" class="article-date">
+  <time datetime="2014-09-01T14:00:00.000Z" itemprop="datePublished">2014-09-02</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2014/09/02/2014_07_24_8-Biggest-Mistakes-of-Application-Architecture/">8 Biggest mistakes of Application Architecture</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>We spend a lot of time arguing of the minutiae of software development. Exceptions or return codes, dynamic or static typing, OO or functional. IMO these have much less to do with the quality of software produced than the architecture, yet we seem to spend less time discussing that. This is the big picture stuff that makes or breaks a product (and it&#39;s owners) and in my experience, terrible architecture seems to be the norm in the enterprise world.</p>
+<p>The following is a bit of a rant about some of the worst anti-patterns I&#39;ve seen in enterprise software. Each one I have experienced at several companies, though (usually) not all at once. Most of them are cargo cult practices, some can be traced back to official Microsoft guidance, some have no reason at all but just seem to exist anyway.</p>
+<p>#1. Logical structure != Physical structure</p>
+<p>I ran into this one just today. We have two services, a and b, that are different but related yet the share most/all of the same internal libraries. Let&#39;s pretend there are good reasons why these services need to be deployed on different machines, because sometimes there are. This does not mean they need to be in separate .csproj files.</p>
+<p>It&#39;s just as easy, perhaps even easier, to deploy a single application to multiple machines with different configurations.</p>
+<p>The physical deployment of an application does not have to be a 1:1 mapping with the solution structure.</p>
+<p>#2. Development is not Production</p>
+<p>On a similar note, it is often claimed that a developers machine should resemble production closely. I can&#39;t think of anything worse. The purpose of a development environment is to DEVELOP, anything that aids this endeavor is welcome, anything that inhibits it is not.</p>
+<p>I want to be developing. I don&#39;t care about how many configurations the application will be split into in production. I don&#39;t want to manage IIS application pools. I don&#39;t want to set up SSL certificates. I don&#39;t even want to have to go to the login screen every time I recompile. These are all production issues and you shouldn&#39;t have to deal with it unless your configuring a production environment.</p>
+<p>A good rule of thumb here is how long it takes a brand new developer to be setup. The answer should be minutes, not hours or days. I actually (very briefly) worked at a company that considered it normal for new developers to spend a week setting up there environment. Companies like this tend to receive the double blow of a week of downtime and a high turnover rate.</p>
+<p>It&#39;s been 15 years since this appeared at number 2 on the <a href="http://www.joelonsoftware.com/articles/fog0000000043.html" target="_blank" rel="external">Joel Test</a>. I&#39;m honestly amazed how many companies still screw it up.</p>
+<p>#3. The .csproj Fetish</p>
+<p>There are many good reasons to separate code into different projects. An MVC app and a WCF service might share common functionality in a library project (or maybe not, see 1). But there are just as many good reasons NOT to separate code into a million tiny assemblies.</p>
+<p>Recently I came across a solution that had 8 projects just to handle pdf conversion. HtmlToPdfConverter, JpegToPdfConverter, etc. Each project had a single class in a single file. The classes combined were barely long to deserve splitting up, let alone into a separate project each.</p>
+<p>All this achieves is to slow down build and debug times. MSBuild slows down dramatically as you increase the number of projects. Try feeding your source tree directly into csc and see just how c# code can be compiled.</p>
+<p>Long before IDE&#39;s held all our code together things were organized into folders. Fortunately, IDE&#39;s are capable if using this technological wizardry, giving us a very simple mechanism of grouping related functionality. Folders exist, use them!</p>
+<p>#4. Repositories on Repositories</p>
+<p>ORMs frequently get a bad wrap for generating n+1 queries, but in the world of enterprise architecture I all to often see a different cause: The Repository Pattern.</p>
+<p>ORMs actually come with a repository pattern built in. In nHibernate (which I&#39;ll use as my example) the repository is the ISession interface. It&#39;s simple and flexible, it can handle nearly every type of query you need and the ones it can&#39;t should probably not by performed by an ORM anyway.</p>
+<p>An architect or developer will come along and build there own repository on top of this one, but with less features and no flexibility. Just in case you want to change your database one day. How many of you have ever actually seen this happen?</p>
+<p>The problem with having data access behind a repository is that it has no context of what data is required for the task at hand. Does it need all the children of that entity? Should it load a parent entity? What should it filter by? It ends with a million permutations of a Find method that the ORM repository is perfectly capable of expressing.</p>
+<p>Why does this cause n+1 errors? Because it&#39;s abstracted the tool with the best way of resolving them.</p>
+<p>Advance Idiots will return a model with lazy loading. Essentially creating an ORM on an ORM.</p>
+<p>#5. The Service Layer.</p>
+<p>This one only applies to web apps. I&#39;m not talking about a logical service layer here, but a real physical one, usually with WCF as the glue. I think the root cause of this is the same as number 1, architects assuming the the physical structure and the logical structure need to completely match.</p>
+<p><a href="http://surana.wordpress.com/2009/01/01/numbers-everyone-should-know/" target="_blank" rel="external">Numbers everyone should know</a> are unfortunately numbers that architects don&#39;t seem to know. Getting data from RAM is a lot faster than getting it from a network. The service is also likely to make network connections of it&#39;s own, usually to a database. The end response time is cumulative, having to make multiple service calls quickly adds up. It won&#39;t even show up in a profiler.</p>
+<p>The most frequent justification I hear for this is scalability. Having a service layer on a different machine than the web server will somehow, magically, help the application scale in a way that having multiple web servers (maybe even a farm) will not. If the applications weren&#39;t spending so much time serializing objects and waiting for synchronous remote procedure calls then maybe they would scale a bit more linearly.</p>
+<p>The other justification I hear a lot is that service oriented architectures are considered good architecture. I&#39;ll probably save this for another rant, but a service layer and SOA are not synonyms, they are completely unrelated to one another.</p>
+<p>Advanced Idiots will combine this with the repository pattern and have n+1 issues spanning multiple network hops.</p>
+<p>Super advanced idiots will have services that call services that call services. Displaying a single piece of data to a user can cross a dozen network/process boundaries.</p>
+<p>Ultra advanced idiots will instantiate a service layer in it&#39;s own process every time a method needs to be called on it. Seriously, I&#39;ve seen this in a production environment handling millions of dollars a month.</p>
+<p>#6. Replacing new with Resolve</p>
+<p>This isn&#39;t an attack on IOC containers, I think they&#39;re great, but in the wrong hands they are disastrous. The concept is simple enough, that&#39;s why every man and his dog have created a toy IOC container, unfortunately a lot of people don&#39;t seem to get to the end of tutorial one.</p>
+<p>An IOC container is designed to wire up structural dependencies. If a class name ends with Service, Factory or Handler it is a good candidate to go in the container. If the methods of a class contain adjectives then it is a good candidate to go in the container. If a class name ends with Model, DTO, Request or Response then it probably should NOT go in the container. If a class frequently appears in a list it should probably NOT go in the container.</p>
+<p>If an application is full of calls to Resolve<t>() then it was built by someone who doesn&#39;t understand the basic concepts of IOC.</t></p>
+<p>Advanced Idiots will combine this with service layers (see number 5). I&#39;ve actually seen IOC containers used to resolve factories that call web services that resolve POCO objects. I&#39;ve actually had an architect that defended this as being good practice. I had to leave work at lunch time before the urge to kill became too great...</p>
+<p>#7. CRUD</p>
+<p>So many applications start out life as a simple forms-over-data interface. But using CRUD as the basis for an application architecture is doomed from the start. CRUD is built around the data model and non-developers are horrible at thinking about the data model, they really shouldn&#39;t have to.</p>
+<p>There is simple crud like active record, but this is about the more advanced CRUD operations. CRUD DAO&#39;s, CRUD Repositories, CRUD View Models, CRUD DTO&#39;s. So much work for such a limited pattern.</p>
+<p>The root of this, of course, is the developers innate desire to generalize common patterns and come up with elaborate use of generics to reduce the amount of code we have to write to solve the problem wrong.</p>
+<p>Software should be modeled around users and the actions they perform, not rows in a database.</p>
+<p>#8. Deployment</p>
+<p>The seems to be a rule that the more a company talk about being agile the worse their deployment procedures are. I would argue that being able to deploy frequently (dare I say continuously) is one of the defining features that show your agility as an organization.</p>
+<p>If you can not have a bug fix in a customers hands within minutes of bug fixed (excluding testing) then your organization is not agile. Telling users that they have to wait for next months deploy to have a critical issue fixed is not agile. Being unable to put up and tear down test environments on a whim is not agile.</p>
+<p>In far to many companies doing a production release is a nerve wracking affair that can consume several days. Number 1, 2 and 5 are the major causes of deployment headaches.</p>
+<p>#Conclusion</p>
+<p>The cause of every one of these issues has been the same, someone with architect in their title. We really should reconsider what the role of an architect is and if the should be involved with technical decisions, or involved at all.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2014/09/02/2014_07_24_8-Biggest-Mistakes-of-Application-Architecture/" data-id="cin1538pj0010k4uyifbtgo4j" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2014/09/02/2014_07_24_8-Biggest-Mistakes-of-Application-Architecture/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/architecture/">architecture</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+  
+    <nav id="page-nav">
+      <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
+    </nav>
+  
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AAATest/">AAATest</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/android/">android</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/app-harbor/">app harbor</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/architecture/">architecture</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/build/">build</a><span class="tag-list-count">8</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/c/">c#</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general/">general</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general-programming/">general programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/integration-test/">integration test</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/msbuild/">msbuild</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nServiceBus/">nServiceBus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nant/">nant</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nunit/">nunit</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/orm/">orm</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/powershell/">powershell</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/psake/">psake</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/scm/">scm</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sql/">sql</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unit-test/">unit test</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/AAATest/" style="font-size: 12.5px;">AAATest</a> <a href="/tags/android/" style="font-size: 10px;">android</a> <a href="/tags/app-harbor/" style="font-size: 10px;">app harbor</a> <a href="/tags/architecture/" style="font-size: 15px;">architecture</a> <a href="/tags/build/" style="font-size: 20px;">build</a> <a href="/tags/c/" style="font-size: 15px;">c#</a> <a href="/tags/general/" style="font-size: 10px;">general</a> <a href="/tags/general-programming/" style="font-size: 10px;">general programming</a> <a href="/tags/integration-test/" style="font-size: 10px;">integration test</a> <a href="/tags/msbuild/" style="font-size: 15px;">msbuild</a> <a href="/tags/nServiceBus/" style="font-size: 10px;">nServiceBus</a> <a href="/tags/nant/" style="font-size: 12.5px;">nant</a> <a href="/tags/nunit/" style="font-size: 10px;">nunit</a> <a href="/tags/orm/" style="font-size: 15px;">orm</a> <a href="/tags/powershell/" style="font-size: 12.5px;">powershell</a> <a href="/tags/psake/" style="font-size: 10px;">psake</a> <a href="/tags/scm/" style="font-size: 10px;">scm</a> <a href="/tags/sql/" style="font-size: 17.5px;">sql</a> <a href="/tags/unit-test/" style="font-size: 15px;">unit test</a> <a href="/tags/vim/" style="font-size: 12.5px;">vim</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">August 2015</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/07/">July 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/03/">March 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/09/">September 2014</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/08/">August 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/12/">December 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/09/">September 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/03/">March 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/01/">January 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/08/">August 2011</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/06/">June 2011</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/04/">April 2011</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recents</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2016/04/14/2016_04_15_Background-Builds-with-Vim-8/">Background Builds with Vim 8</a>
+          </li>
+        
+          <li>
+            <a href="/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/">ORM vs SQL Part 1 - Paging</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/24/2015_07_24_Simple-Abstractions/">Simple Abstractions</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/09/2015_07_09-Interfaces-for-Data/">Simple Interfaces for Data</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/03/2015_07_03-Vim-errorformat-Demystified/">Vim errorformat Demystified</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2016 Luke Usher<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+<script>
+  var disqus_shortname = 'proactivelylazy';
+  
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/count.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

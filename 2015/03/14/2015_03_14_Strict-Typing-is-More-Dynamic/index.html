@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Strict Typing is More Dynamic | Proactively Lazy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="So often the focus of the strongly typed vs dynamic typed debate is about compile time, or lack thereof.
+Sure, strongly typed languages offer a range of compile time checks not possible in their dynam">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Strict Typing is More Dynamic">
+<meta property="og:url" content="http://flukus.github.io/2015/03/14/2015_03_14_Strict-Typing-is-More-Dynamic/index.html">
+<meta property="og:site_name" content="Proactively Lazy">
+<meta property="og:description" content="So often the focus of the strongly typed vs dynamic typed debate is about compile time, or lack thereof.
+Sure, strongly typed languages offer a range of compile time checks not possible in their dynam">
+<meta property="og:updated_time" content="2015-08-11T23:38:44.915Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Strict Typing is More Dynamic">
+<meta name="twitter:description" content="So often the focus of the strongly typed vs dynamic typed debate is about compile time, or lack thereof.
+Sure, strongly typed languages offer a range of compile time checks not possible in their dynam">
+  
+    <link rel="alternative" href="/atom.xml" title="Proactively Lazy" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+</head>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Proactively Lazy</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://flukus.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-2015_03_14_Strict-Typing-is-More-Dynamic" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/03/14/2015_03_14_Strict-Typing-is-More-Dynamic/" class="article-date">
+  <time datetime="2015-03-13T13:00:00.000Z" itemprop="datePublished">2015-03-14</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Strict Typing is More Dynamic
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>So often the focus of the strongly typed vs dynamic typed debate is about compile time, or lack thereof.
+Sure, strongly typed languages offer a range of compile time checks not possible in their dynamic counterparts,
+but less talked about are dynamic, runtime possibilities that a rich type system makes possible.</p>
+<p>Most modern, strongly typed, non-system languages (java, c#, others) come with a reflection API,
+a method of getting rich type information at runtime.
+This opens up a world of possibilities to reduce code and decouple components.
+Today I&#39;ll look at a few examples of these.</p>
+<p>##Dependency Injection</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public class Foo &#123;</span><br><span class="line">  public Foo(SomeDependency sd, SomeOtherDependeency sod) &#123;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The first one that most programmers are probably familiar with is dependency injection.
+In a strongly typed language, an IOC container can inspect a type,
+find what other types it depends upon and use the information to construct an object.</p>
+<p>In the above code, the IOC container will see that the Foo class has two dependencies.
+At runtime it can instantiate an instance class by invoking the constructor and providing the correct dependencies.
+It can provide different dependencies depending on a range of factors, from configuration to url parameters.</p>
+<p>A multi tenant application, for example,
+may have different implementations of SomeDependency for differing configurations.
+The IOC container can look at the URL and provide the correct implementation for that tenant.
+The controller is completely oblivious to this so it&#39;s code is simpler and more maintainable.</p>
+<p>##The Mediator Pattern</p>
+<p>The mediator pattern is a useful technique to decouple software components.
+Examples would be CQRS (such as <a href="https://github.com/jbogard/MediatR" target="_blank" rel="external">mediatr</a>) and pub/sub like with <a href="http://masstransit-project.com/" target="_blank" rel="external">mass transit</a>.
+In both cases the calling application knows nothing of the implementor, if one exists at all.
+Here is an example of a product controller using a mediator:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">public class DiscountProductCommand : ICommand &#123;</span><br><span class="line">  public int ProductId &#123; get; set;&#125;</span><br><span class="line">  public public double DiscountAmmount &#123; get; set; &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">public classs ProductController &#123;</span><br><span class="line"></span><br><span class="line">  private readonly IMediator Mediator;</span><br><span class="line">  private readonly IUser User;</span><br><span class="line"></span><br><span class="line">  public ProductController(IMediator mediator, IUser user) &#123;</span><br><span class="line">    Mediator = mediator;</span><br><span class="line">    User = user;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  public ActionResult ApplyDiscount(DiscountProductCommand command) &#123;</span><br><span class="line">    if (ModelState.IsValid) &#123;</span><br><span class="line">      Mediator.execute(command);</span><br><span class="line">      User.Notify(&quot;Discount has been applied&quot;);</span><br><span class="line">      return RedirectToAction(&quot;Home&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">    return View(command);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">public class ProductExecutor : IExecute&lt;DiscountProductCommand&gt; &#123;</span><br><span class="line">  public void Execute(DiscountProductCommand command) &#123;</span><br><span class="line">    //code goes here</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>A runtime bootstrapping process will scan the assembly for all types that implement IExecute<something>,
+automagically wiring up the application with full type safety.
+This type of loose coupling of components makes software a joy to maintain and extend.</something></p>
+<p>##Rich Metadata</p>
+<p>Reflection APIs aren&#39;t limited to just names and types either,
+rich meta data can be added with attributes.
+The functionality of these attributes can vary,
+from simple simple information to full blown AOP designs.
+Here are a couple of examples:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">public class ProductVM &#123;</span><br><span class="line">  public int? Id &#123; get; set; &#125;</span><br><span class="line"></span><br><span class="line">  [Required]</span><br><span class="line">  public string Name &#123; get; set; &#125;</span><br><span class="line"></span><br><span class="line">  [DisplayName(&quot;SKU&quot;)]</span><br><span class="line">  [Required]</span><br><span class="line">  public string Code &#123; get; set; &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The DisplayName attribute is used by a form generator to create the correct label
+and the validator to generate the correct error message.
+The validator also knows which fields are required,
+in this simple case all validation is done without writing any real code.</p>
+<p>AOP is a more advanced technique to apply cross cutting concerns with less code.
+It is highly dynamic and depends heavily on strong type information.
+Here is an example of how rich logging can be automagically applied:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[EnableLogging]</span><br><span class="line">public class UserAPI &#123;</span><br><span class="line"></span><br><span class="line">  public List&lt;User&gt; SearchUsers(UserSeearchQuery query) &#123; &#125;</span><br><span class="line"></span><br><span class="line">  public void ChangePassword(int userId, [SkipLog]string oldPassword, [SkipLog]string newPassword) &#123; &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Using an AOP framework a proxy interceptor can be created.
+The interceptor automatically serializes and logs the method called (and the parameters), the current user, etc.
+This is great information to have when a bug is reported
+because all the information needed to replicate the issue can be found in the log.
+Further refinement can be made, such as avoiding sensitive information (passwords, cc numbers) from ending up log files.
+The SkipLog attribute allows us to avoid logging sensitive information while still getting the
+benefits of the interceptor.</p>
+<p>##Conclusion</p>
+<p>These are examples of how strongly typed languages can defer many decisions until runtime
+and respond to a range of environmental factors to build the execution path.
+I would argue that these approaches make strict typing more dynamic and adaptable than dynamic ones,
+which usually have to resort to a lot of manual wiring and &quot;stringly&quot; typing to achieve the same results.</p>
+<p>Languages like ruby have become nearly synonymous with &quot;convention over configuration&quot;,
+yet they are less capable of supporting it than there strongly types counterparts.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2015/03/14/2015_03_14_Strict-Typing-is-More-Dynamic/" data-id="cin1538qu001ik4uyeebn1syy" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2015/03/14/2015_03_14_Strict-Typing-is-More-Dynamic/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/c/">c#</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/general-programming/">general programming</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2015/07/03/2015_07_03-Vim-errorformat-Demystified/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          Vim errorformat Demystified
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2015/03/13/2015_03_13_Powershell-is-a-Joke/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Powershell is a Joke</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+<section id="comments">
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AAATest/">AAATest</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/android/">android</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/app-harbor/">app harbor</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/architecture/">architecture</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/build/">build</a><span class="tag-list-count">8</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/c/">c#</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general/">general</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general-programming/">general programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/integration-test/">integration test</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/msbuild/">msbuild</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nServiceBus/">nServiceBus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nant/">nant</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nunit/">nunit</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/orm/">orm</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/powershell/">powershell</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/psake/">psake</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/scm/">scm</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sql/">sql</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unit-test/">unit test</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/AAATest/" style="font-size: 12.5px;">AAATest</a> <a href="/tags/android/" style="font-size: 10px;">android</a> <a href="/tags/app-harbor/" style="font-size: 10px;">app harbor</a> <a href="/tags/architecture/" style="font-size: 15px;">architecture</a> <a href="/tags/build/" style="font-size: 20px;">build</a> <a href="/tags/c/" style="font-size: 15px;">c#</a> <a href="/tags/general/" style="font-size: 10px;">general</a> <a href="/tags/general-programming/" style="font-size: 10px;">general programming</a> <a href="/tags/integration-test/" style="font-size: 10px;">integration test</a> <a href="/tags/msbuild/" style="font-size: 15px;">msbuild</a> <a href="/tags/nServiceBus/" style="font-size: 10px;">nServiceBus</a> <a href="/tags/nant/" style="font-size: 12.5px;">nant</a> <a href="/tags/nunit/" style="font-size: 10px;">nunit</a> <a href="/tags/orm/" style="font-size: 15px;">orm</a> <a href="/tags/powershell/" style="font-size: 12.5px;">powershell</a> <a href="/tags/psake/" style="font-size: 10px;">psake</a> <a href="/tags/scm/" style="font-size: 10px;">scm</a> <a href="/tags/sql/" style="font-size: 17.5px;">sql</a> <a href="/tags/unit-test/" style="font-size: 15px;">unit test</a> <a href="/tags/vim/" style="font-size: 12.5px;">vim</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">August 2015</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/07/">July 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/03/">March 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/09/">September 2014</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/08/">August 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/12/">December 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/09/">September 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/03/">March 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/01/">January 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/08/">August 2011</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/06/">June 2011</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/04/">April 2011</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recents</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2016/04/14/2016_04_15_Background-Builds-with-Vim-8/">Background Builds with Vim 8</a>
+          </li>
+        
+          <li>
+            <a href="/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/">ORM vs SQL Part 1 - Paging</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/24/2015_07_24_Simple-Abstractions/">Simple Abstractions</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/09/2015_07_09-Interfaces-for-Data/">Simple Interfaces for Data</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/03/2015_07_03-Vim-errorformat-Demystified/">Vim errorformat Demystified</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2016 Luke Usher<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+<script>
+  var disqus_shortname = 'proactivelylazy';
+  
+  var disqus_url = 'http://flukus.github.io/2015/03/14/2015_03_14_Strict-Typing-is-More-Dynamic/';
+  
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

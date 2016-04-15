@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Vim errorformat Demystified | Proactively Lazy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Vim&amp;#39;s errorformat is on of the more arcane part&amp;#39;s of vim.
+It has constantly had me tearing my hair out,
+if you&amp;#39;ve found this page there&amp;#39;s a good chance you are too.
+Judging from the go">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Vim errorformat Demystified">
+<meta property="og:url" content="http://flukus.github.io/2015/07/03/2015_07_03-Vim-errorformat-Demystified/index.html">
+<meta property="og:site_name" content="Proactively Lazy">
+<meta property="og:description" content="Vim&amp;#39;s errorformat is on of the more arcane part&amp;#39;s of vim.
+It has constantly had me tearing my hair out,
+if you&amp;#39;ve found this page there&amp;#39;s a good chance you are too.
+Judging from the go">
+<meta property="og:updated_time" content="2015-08-11T23:38:44.919Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Vim errorformat Demystified">
+<meta name="twitter:description" content="Vim&amp;#39;s errorformat is on of the more arcane part&amp;#39;s of vim.
+It has constantly had me tearing my hair out,
+if you&amp;#39;ve found this page there&amp;#39;s a good chance you are too.
+Judging from the go">
+  
+    <link rel="alternative" href="/atom.xml" title="Proactively Lazy" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+</head>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Proactively Lazy</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://flukus.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-2015_07_03-Vim-errorformat-Demystified" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/07/03/2015_07_03-Vim-errorformat-Demystified/" class="article-date">
+  <time datetime="2015-07-02T14:00:00.000Z" itemprop="datePublished">2015-07-03</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Vim errorformat Demystified
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Vim&#39;s errorformat is on of the more arcane part&#39;s of vim.
+It has constantly had me tearing my hair out,
+if you&#39;ve found this page there&#39;s a good chance you are too.
+Judging from the google results I&#39;ve seen this is quite a common reaction.</p>
+<p>Simple, single line formats are easy enough to work out with a little trial and error,
+the problems start mounting when you need multiple formats simultaneously,
+or worse, multi line error formats.</p>
+<p>I believe this is more to do with the documentation than anything else.
+Despite being extensive and containing many examples it actually does very little to explain things.
+Once you understand a few key things though, it&#39;s actually much simpler than it seems.</p>
+<p>##An Array of Formats</p>
+<p>The efm variable is a csv of error formats.
+Personally I prefer to visualize it as an array.
+Let&#39;s look at an example from vim&#39;s documentation example like:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">:<span class="keyword">set</span> efm=%EError\ %n,%Cline\ %<span class="keyword">l</span>,%Ccolumn\ %<span class="keyword">c</span>,%Z%<span class="keyword">m</span></span><br></pre></td></tr></table></figure>
+<p>You might intuitively think that this is a single error format, which is exactly what I thought.
+It is in fact four completely separate error format&#39;s, delineated by commas.
+Vim will loop through each pattern and see if the current line matches it, breaking if it finds a match.</p>
+<p>Let me repeat that, these are four separate error formats,
+understanding this was my eureka moment, when I finally understood how it worked.
+The above format could be written as:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">:<span class="keyword">set</span> efm=%Cline\ %<span class="keyword">l</span>,%Ccolumn\ %<span class="keyword">c</span>,%Z%<span class="keyword">m</span>,%EError\ %n</span><br></pre></td></tr></table></figure>
+<p>Which would work exactly the same, at least in this limited scenario.
+The format I prefer however is this:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> efm+=%EError\ %n</span><br><span class="line"><span class="keyword">set</span> efm=%Cline\ %<span class="keyword">l</span></span><br><span class="line"><span class="keyword">set</span> efm+=%Ccolumn\ %<span class="keyword">c</span></span><br><span class="line"><span class="keyword">set</span> efm+=%Z%<span class="keyword">m</span></span><br></pre></td></tr></table></figure>
+<p>This allows the precedence order to be adjusted by moving the lines up and down.
+When you have to deal with multiple error formats this is incredibly important.</p>
+<p>##Step by Step</p>
+<p>Now for a real world example, recently I wanted to write a format that works with the nunit/nant combo,
+the output looks like this:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[exec] <span class="number">1</span>) Test Failure : TestClass.IsTrue</span><br><span class="line">[exec]   Custom error message goes here.</span><br><span class="line">[exec]   Expected: True</span><br><span class="line">[exec]   But <span class="keyword">wa</span><span class="variable">s:</span>  False</span><br><span class="line">[exec]</span><br><span class="line">[exec] at TestClass.IsTrue() in <span class="keyword">c</span>:\projects\book projects\src\app\Test.<span class="keyword">c</span><span class="variable">s:l</span> ine <span class="number">9</span></span><br></pre></td></tr></table></figure>
+<p>The first step to creating an error format is to get the file name and line:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> efm=%.%#\ at\ %.%#\ in\ %<span class="keyword">f</span>:<span class="built_in">line</span>\ %<span class="keyword">l</span></span><br></pre></td></tr></table></figure>
+<p>This is saying:</p>
+<ol>
+<li>Find any text (%.%# is a wild card) until we get to &quot; at &quot;.</li>
+<li>Then any text until we get to &quot; in &quot;.</li>
+<li>Then the filename (%f) followed by a colon (:)</li>
+<li>Finally the word &quot;line &quot; (whitespace sensitive) followed by the line number (%l)</li>
+</ol>
+<p>If it&#39;s run against a failing test then the output will be:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">47 src\app\Test.cs:9:</span><br></pre></td></tr></table></figure>
+<p>This works, we can easily jump to the file and location but there is no other information.
+To improve this we have to use a multiple formats and use multi line syntax.
+First we update the format:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> efm=%Z%.%#\ at\ %.%#\ in\ %<span class="keyword">f</span>:<span class="built_in">line</span>\ %<span class="keyword">l</span></span><br></pre></td></tr></table></figure>
+<p>&quot;%Z&quot; has been added to the start.
+This means it will only be considered if a flag is set indicating we are in the middle of a multi line error.
+It is also considered the end of the multi line error, the flag is turned off if this is a match.
+Running it now will not produce a match.</p>
+<p>To set the multi line flag we need to add another format:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> efm=%E%.%#Test\ Failure\ :%.%#</span><br><span class="line"><span class="keyword">set</span> efm+=%Z%.%#\ at\ %.%#\ in\ %<span class="keyword">f</span>:<span class="built_in">line</span>\ %<span class="keyword">l</span></span><br></pre></td></tr></table></figure>
+<p>The second line is mostly the same (note the += at the start).
+The first line is a format saying the following:</p>
+<ol>
+<li>Set the multi line flag (%E) if this is a match</li>
+<li>Find any text until we get to &quot;Test Failure : &quot;</li>
+<li>Followed by any text.</li>
+</ol>
+<p>If we run this now it still won&#39;t work.
+The multi line flag is turned off if a non matching line is found.
+The simplest way to do this is to match any line:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> efm=%E%.%#Test\ Failure\ :%.%#</span><br><span class="line"><span class="keyword">set</span> efm+=%Z%.%#\ at\ %.%#\ in\ %<span class="keyword">f</span>:<span class="built_in">line</span>\ %<span class="keyword">l</span></span><br><span class="line"><span class="keyword">set</span> efm+=%C%.%#</span><br></pre></td></tr></table></figure>
+<p>The %C means it only matches if the multi line flag is on.
+It then uses a wild card to match anything.
+Because this matches practically anything it is placed last, giving it the lowest precedence.
+If the second and third lines were switched then every line after the first error would be considered part of the error,
+ the file name and line number would never get matched.</p>
+<p>The last part is to get all the information in between, we add a fourth pattern:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> efm=%E%.%#Test\ Failure\ :%.%#</span><br><span class="line"><span class="keyword">set</span> efm+=%Z%.%#\ at\ %.%#\ in\ %<span class="keyword">f</span>:<span class="built_in">line</span>\ %<span class="keyword">l</span></span><br><span class="line"><span class="keyword">set</span> efm+=%C%.%#[exec]\ %#%<span class="keyword">m</span></span><br><span class="line"><span class="keyword">set</span> efm+=%C%.%#</span><br></pre></td></tr></table></figure>
+<p>The added third line is saying:</p>
+<ol>
+<li>Only apply this if the multi line flag is set (%C)</li>
+<li>Find any text up to [exec]</li>
+<li>Find any space characters</li>
+<li>Append the rest of the line to the error message (%m)</li>
+</ol>
+<p>The output will look like:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">47 src\app\Test.cs:9: Custom error message goes here. Expected: true But was: false</span><br></pre></td></tr></table></figure>
+<p>To make this easier to manage it is a good idea to keep the error line it is matching in a comment:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">"[exec] 1) Test Failure : TestClass.IsTrue</span></span><br><span class="line"><span class="keyword">set</span> efm=%E%.%#Test\ Failure\ :%.%#</span><br><span class="line"><span class="comment">"[exec] at TestClass.IsTrue() in c:\projects\book projects\src\app\Test.cs:l ine 9</span></span><br><span class="line"><span class="keyword">set</span> efm+=%Z%.%#\ at\ %.%#\ in\ %<span class="keyword">f</span>:<span class="built_in">line</span>\ %<span class="keyword">l</span></span><br><span class="line"><span class="comment">"[exec]   Custom error message goes here.</span></span><br><span class="line"><span class="comment">"[exec]   Expected: True</span></span><br><span class="line"><span class="comment">"[exec]   But was:  False</span></span><br><span class="line"><span class="keyword">set</span> efm+=%C%.%#[exec]\ %#%<span class="keyword">m</span></span><br><span class="line"><span class="comment">"[exec]</span></span><br><span class="line"><span class="keyword">set</span> efm+=%C%.%#</span><br></pre></td></tr></table></figure>
+<p>##More Errors</p>
+<p>The above assumes that nunit errors are all we care about but there are many others,
+from the compiler itself and the build script itself being the two obvious ones.
+If the build script itself throws an error it looks like this:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">c:\projects\project1\nant.build(23,5):</span><br><span class="line">Error loading buildfile.</span><br><span class="line"></span><br><span class="line">    The &apos;cscvffe&apos; start tag on line 11 position 4 does not match the end tag of &apos;csc&apos;. Line 23, position 5.</span><br></pre></td></tr></table></figure>
+<p>The error format for this is rather straight forward:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">"c:\projects\project1\nant.build(23,5):</span></span><br><span class="line"><span class="keyword">set</span> efm=%E%<span class="keyword">f</span>(%<span class="keyword">l</span>\\,%<span class="keyword">c</span>):</span><br><span class="line"><span class="comment">"Error loading buildfile.</span></span><br><span class="line"><span class="comment">"</span></span><br><span class="line"><span class="comment">"    The 'cscvffe' start tag on line 11 position 4 does not match the end tag of 'csc'. Line 23, position 5.</span></span><br><span class="line"><span class="keyword">set</span> efm+=%C%<span class="keyword">m</span></span><br></pre></td></tr></table></figure>
+<p>To get it to work with other errors though, it need to be arranged in order of specificity:</p>
+<figure class="highlight vim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">"[exec] 1) Test Failure : TestClass.IsTrue</span></span><br><span class="line"><span class="keyword">set</span> efm=%E%.%#Test\ Failure\ :%.%#</span><br><span class="line"><span class="comment">"c:\projects\project1\nant.build(23,5):</span></span><br><span class="line"><span class="keyword">set</span> efm=%E%<span class="keyword">f</span>(%<span class="keyword">l</span>\\,%<span class="keyword">c</span>):</span><br><span class="line"><span class="comment">"[exec] at TestClass.IsTrue() in c:\projects\book projects\src\app\Test.cs:l ine 9</span></span><br><span class="line"><span class="keyword">set</span> efm+=%Z%.%#\ at\ %.%#\ in\ %<span class="keyword">f</span>:<span class="built_in">line</span>\ %<span class="keyword">l</span></span><br><span class="line"><span class="comment">"[exec]   Custom error message goes here.</span></span><br><span class="line"><span class="comment">"[exec]   Expected: True</span></span><br><span class="line"><span class="comment">"[exec]   But was:  False</span></span><br><span class="line"><span class="keyword">set</span> efm+=%C%.%#[exec]\ %#%<span class="keyword">m</span></span><br><span class="line"><span class="comment">"Error loading buildfile.</span></span><br><span class="line"><span class="comment">"</span></span><br><span class="line"><span class="comment">"    The 'cscvffe' start tag on line 11 position 4 does not match the end tag of 'csc'. Line 23, position 5.</span></span><br><span class="line"><span class="keyword">set</span> efm+=%C%<span class="keyword">m</span></span><br><span class="line"><span class="comment">"[exec]</span></span><br><span class="line"><span class="keyword">set</span> efm+=%C%.%#</span><br></pre></td></tr></table></figure>
+<p>The start format goes near the top because it signifies the start of a new error no matter what.
+The message line is very generic though, so it has to go right near the bottom.</p>
+<p>Error formats, and the quick list itself is one of those features that really makes vim shine,
+It just needs some customization for your particular tool set.
+Hopefully I&#39;ve straightened out some misconceptions here.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2015/07/03/2015_07_03-Vim-errorformat-Demystified/" data-id="cin1538qu001kk4uypge3s6zr" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2015/07/03/2015_07_03-Vim-errorformat-Demystified/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/nunit/">nunit</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/vim/">vim</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2015/07/09/2015_07_09-Interfaces-for-Data/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          Simple Interfaces for Data
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2015/03/14/2015_03_14_Strict-Typing-is-More-Dynamic/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Strict Typing is More Dynamic</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+<section id="comments">
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AAATest/">AAATest</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/android/">android</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/app-harbor/">app harbor</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/architecture/">architecture</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/build/">build</a><span class="tag-list-count">8</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/c/">c#</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general/">general</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general-programming/">general programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/integration-test/">integration test</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/msbuild/">msbuild</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nServiceBus/">nServiceBus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nant/">nant</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nunit/">nunit</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/orm/">orm</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/powershell/">powershell</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/psake/">psake</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/scm/">scm</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sql/">sql</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unit-test/">unit test</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/AAATest/" style="font-size: 12.5px;">AAATest</a> <a href="/tags/android/" style="font-size: 10px;">android</a> <a href="/tags/app-harbor/" style="font-size: 10px;">app harbor</a> <a href="/tags/architecture/" style="font-size: 15px;">architecture</a> <a href="/tags/build/" style="font-size: 20px;">build</a> <a href="/tags/c/" style="font-size: 15px;">c#</a> <a href="/tags/general/" style="font-size: 10px;">general</a> <a href="/tags/general-programming/" style="font-size: 10px;">general programming</a> <a href="/tags/integration-test/" style="font-size: 10px;">integration test</a> <a href="/tags/msbuild/" style="font-size: 15px;">msbuild</a> <a href="/tags/nServiceBus/" style="font-size: 10px;">nServiceBus</a> <a href="/tags/nant/" style="font-size: 12.5px;">nant</a> <a href="/tags/nunit/" style="font-size: 10px;">nunit</a> <a href="/tags/orm/" style="font-size: 15px;">orm</a> <a href="/tags/powershell/" style="font-size: 12.5px;">powershell</a> <a href="/tags/psake/" style="font-size: 10px;">psake</a> <a href="/tags/scm/" style="font-size: 10px;">scm</a> <a href="/tags/sql/" style="font-size: 17.5px;">sql</a> <a href="/tags/unit-test/" style="font-size: 15px;">unit test</a> <a href="/tags/vim/" style="font-size: 12.5px;">vim</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">August 2015</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/07/">July 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/03/">March 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/09/">September 2014</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/08/">August 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/12/">December 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/09/">September 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/03/">March 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/01/">January 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/08/">August 2011</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/06/">June 2011</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/04/">April 2011</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recents</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2016/04/14/2016_04_15_Background-Builds-with-Vim-8/">Background Builds with Vim 8</a>
+          </li>
+        
+          <li>
+            <a href="/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/">ORM vs SQL Part 1 - Paging</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/24/2015_07_24_Simple-Abstractions/">Simple Abstractions</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/09/2015_07_09-Interfaces-for-Data/">Simple Interfaces for Data</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/03/2015_07_03-Vim-errorformat-Demystified/">Vim errorformat Demystified</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2016 Luke Usher<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+<script>
+  var disqus_shortname = 'proactivelylazy';
+  
+  var disqus_url = 'http://flukus.github.io/2015/07/03/2015_07_03-Vim-errorformat-Demystified/';
+  
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

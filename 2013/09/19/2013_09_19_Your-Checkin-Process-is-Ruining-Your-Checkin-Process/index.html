@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Your checkin process is Ruining your checkin process | Proactively Lazy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Like most people I like to take the easy road, the path of least resistance. Fortunately most of the tools we use on a daily basis cater for that and makes life as easy as possible. One of those tools">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Your checkin process is Ruining your checkin process">
+<meta property="og:url" content="http://flukus.github.io/2013/09/19/2013_09_19_Your-Checkin-Process-is-Ruining-Your-Checkin-Process/index.html">
+<meta property="og:site_name" content="Proactively Lazy">
+<meta property="og:description" content="Like most people I like to take the easy road, the path of least resistance. Fortunately most of the tools we use on a daily basis cater for that and makes life as easy as possible. One of those tools">
+<meta property="og:updated_time" content="2015-08-11T23:38:44.855Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Your checkin process is Ruining your checkin process">
+<meta name="twitter:description" content="Like most people I like to take the easy road, the path of least resistance. Fortunately most of the tools we use on a daily basis cater for that and makes life as easy as possible. One of those tools">
+  
+    <link rel="alternative" href="/atom.xml" title="Proactively Lazy" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+</head>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Proactively Lazy</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://flukus.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-2013_09_19_Your-Checkin-Process-is-Ruining-Your-Checkin-Process" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2013/09/19/2013_09_19_Your-Checkin-Process-is-Ruining-Your-Checkin-Process/" class="article-date">
+  <time datetime="2013-09-18T14:00:00.000Z" itemprop="datePublished">2013-09-19</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Your checkin process is Ruining your checkin process
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Like most people I like to take the easy road, the path of least resistance. Fortunately most of the tools we use on a daily basis cater for that and makes life as easy as possible. One of those tools is source control, every SCM, TFS aside, makes it a straightforward process to checkout, checkin, branch and merge your code.</p>
+<p>The requirements of an SCM (not the implimentation) are fairly modest. It has to keep track of our files, when, who and why they have changed. It has to keep a historical record of these changes for that inevitable day when someone ask &quot;WTF was this done for?&quot;. An SCM will take care of the who and when for the most part, we just have to supply the why.</p>
+<p>Unless your trying to assign blame the why is the most important part. It&#39;s a little message to future you or future college what the reasoning behind that particular change was. This is one of the most invaluable features of source control.</p>
+<p>Then the complicators get in, these guys are just like there architecture astronaut counterparts. The see a simple process and try to make it enterprisy. All of a sudden source control, instead of being the bedrock of the development process, becomes a management tool and prevents good practices instead of creating them.</p>
+<p>Here are some common ways too much process can wreck your development bedrock.</p>
+<p>#&quot;Every checkin shall hencforth require a ticket&quot; - The Complicator</p>
+<p>This is probably the most common form of SCM abuse. Every checkin requires a reference to a task or a bug so that every change is recorded and justified. It sounds like a good idea at the start but it has some pretty serious downsides that aren&#39;t immediately apparent.</p>
+<p>Quite frequently we come across bugs and being the good developers we are, we like to fix things, we fix it while we&#39;re there. But then comes the paperwork, the mental overhead that we would rather not deal with. Should we create a bug for this single line fix? Should we role it into another checkin? Should we ignore it?</p>
+<p>Creating bug ticket for a single line fix we just happened to come across is just more trouble than it&#39;s worth, we are developers after all, not bureaucrats. The 10 minutes or more to create a ticket for a 5 second fix is woefully inefficient.</p>
+<p>Squeezing it in to another checkin is probably the most common result, but it undermines the value of source control and, ironically enough, the process that was put around it. The process that was meant to document the reason for the change suddenly has a random change with no apparent reason, which makes it pretty useless.</p>
+<p>This also leads to another problem, monolithic checkins. A monolithic checkin is either more than a days work in a single checkin or several unrelated changes in a single checkin. The bigger the checkin the less likely it is that all the changes have been documented correctly. And the bigger the checkin the harder merging will be. So in this case too much checkin has undermined the value of source control.</p>
+<p>#The Inevitable Result</p>
+<p>The final option left to the developer and probably the most common one is to ignore the problem in the first place. As I said, I follow the path of least resistance, and if your process requires more work than fixing a bug then we might just decide it&#39;s not worth while. Every body loses in this situation, the business has a worse product and the developers don&#39;t get to fix things. We like fixing things.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2013/09/19/2013_09_19_Your-Checkin-Process-is-Ruining-Your-Checkin-Process/" data-id="cin1538on000rk4uy6aftc711" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2013/09/19/2013_09_19_Your-Checkin-Process-is-Ruining-Your-Checkin-Process/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/scm/">scm</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2013/12/12/2013_12_12_ORM-vs-SQL-2-Ordering/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          ORM vs SQL Part 2 - Ordering
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2013/03/31/2013_03_31_NServicebus-Configuration-is-a-Nightmare/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">NServicebus Configuration is a Nightmare</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+<section id="comments">
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AAATest/">AAATest</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/android/">android</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/app-harbor/">app harbor</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/architecture/">architecture</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/build/">build</a><span class="tag-list-count">8</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/c/">c#</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general/">general</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general-programming/">general programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/integration-test/">integration test</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/msbuild/">msbuild</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nServiceBus/">nServiceBus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nant/">nant</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nunit/">nunit</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/orm/">orm</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/powershell/">powershell</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/psake/">psake</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/scm/">scm</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sql/">sql</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unit-test/">unit test</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/AAATest/" style="font-size: 12.5px;">AAATest</a> <a href="/tags/android/" style="font-size: 10px;">android</a> <a href="/tags/app-harbor/" style="font-size: 10px;">app harbor</a> <a href="/tags/architecture/" style="font-size: 15px;">architecture</a> <a href="/tags/build/" style="font-size: 20px;">build</a> <a href="/tags/c/" style="font-size: 15px;">c#</a> <a href="/tags/general/" style="font-size: 10px;">general</a> <a href="/tags/general-programming/" style="font-size: 10px;">general programming</a> <a href="/tags/integration-test/" style="font-size: 10px;">integration test</a> <a href="/tags/msbuild/" style="font-size: 15px;">msbuild</a> <a href="/tags/nServiceBus/" style="font-size: 10px;">nServiceBus</a> <a href="/tags/nant/" style="font-size: 12.5px;">nant</a> <a href="/tags/nunit/" style="font-size: 10px;">nunit</a> <a href="/tags/orm/" style="font-size: 15px;">orm</a> <a href="/tags/powershell/" style="font-size: 12.5px;">powershell</a> <a href="/tags/psake/" style="font-size: 10px;">psake</a> <a href="/tags/scm/" style="font-size: 10px;">scm</a> <a href="/tags/sql/" style="font-size: 17.5px;">sql</a> <a href="/tags/unit-test/" style="font-size: 15px;">unit test</a> <a href="/tags/vim/" style="font-size: 12.5px;">vim</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">August 2015</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/07/">July 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/03/">March 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/09/">September 2014</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/08/">August 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/12/">December 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/09/">September 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/03/">March 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/01/">January 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/08/">August 2011</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/06/">June 2011</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/04/">April 2011</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recents</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2016/04/14/2016_04_15_Background-Builds-with-Vim-8/">Background Builds with Vim 8</a>
+          </li>
+        
+          <li>
+            <a href="/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/">ORM vs SQL Part 1 - Paging</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/24/2015_07_24_Simple-Abstractions/">Simple Abstractions</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/09/2015_07_09-Interfaces-for-Data/">Simple Interfaces for Data</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/03/2015_07_03-Vim-errorformat-Demystified/">Vim errorformat Demystified</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2016 Luke Usher<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+<script>
+  var disqus_shortname = 'proactivelylazy';
+  
+  var disqus_url = 'http://flukus.github.io/2013/09/19/2013_09_19_Your-Checkin-Process-is-Ruining-Your-Checkin-Process/';
+  
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

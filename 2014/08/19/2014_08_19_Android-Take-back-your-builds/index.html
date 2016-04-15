@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Android - Take back your Builds | Proactively Lazy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="So I started getting back into android development, reviving a little app I published a few years ago. The app itself was fairly crappy by android 1.6 standards (get off my lawn!) and now it&amp;#39;s jus">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Android - Take back your Builds">
+<meta property="og:url" content="http://flukus.github.io/2014/08/19/2014_08_19_Android-Take-back-your-builds/index.html">
+<meta property="og:site_name" content="Proactively Lazy">
+<meta property="og:description" content="So I started getting back into android development, reviving a little app I published a few years ago. The app itself was fairly crappy by android 1.6 standards (get off my lawn!) and now it&amp;#39;s jus">
+<meta property="og:updated_time" content="2015-08-11T23:38:44.884Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Android - Take back your Builds">
+<meta name="twitter:description" content="So I started getting back into android development, reviving a little app I published a few years ago. The app itself was fairly crappy by android 1.6 standards (get off my lawn!) and now it&amp;#39;s jus">
+  
+    <link rel="alternative" href="/atom.xml" title="Proactively Lazy" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+</head>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Proactively Lazy</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://flukus.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-2014_08_19_Android-Take-back-your-builds" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2014/08/19/2014_08_19_Android-Take-back-your-builds/" class="article-date">
+  <time datetime="2014-08-18T14:00:00.000Z" itemprop="datePublished">2014-08-19</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Android - Take back your Builds
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>So I started getting back into android development, reviving a little app I published a few years ago. The app itself was fairly crappy by android 1.6 standards (get off my lawn!) and now it&#39;s just looking terrible.</p>
+<p>So I fire up the shiny new android studio but it looks like I&#39;m going to have to start the project from scratch and port everything over. After getting frustrated trying to do the simplest things, like adding a library I went back to Eclipse. Several arcane build errors and several even more arcane eclipse ones later I was getting frustrated. Clearly this isn&#39;t going to work.</p>
+<p>Aside from the terrible UI&#39;s of both IDE&#39;s there was something much more important. I wasn&#39;t getting any functionality out of them either, they were just getting in my way. I wanted to try the new atom editor but as yet don&#39;t have an invite, so I went back to trusty old vim with ant. This is when I discovered androids dirty little secret: the build system.</p>
+<p>##Monolithic Madness</p>
+<p>A build system, as with other aspects of development, work best when you start with discreet parts and assemble them into a whole. I expected to find some ant tasks that wrap android tools and to be able to plug them in and get going</p>
+<p>Alas, google instead gives us some monolithic tools that define your build system for you. Attempting to go deeper give you a &quot;here be dragons&quot; warning. The tools that are at the very center of android development and yet there documentation consists of:</p>
+<blockquote>
+<p>The other platform tools, such as aidl, aapt, dexdump, and dx, are typically called by the Android build tools or Android Development Tools (ADT), so you rarely need to invoke these tools directly. As a general rule, you should rely on the build tools or the ADT plugin to call them as needed.</p>
+</blockquote>
+<p>I firmly believe that this is at the center of why android IDE&#39;s are so lackluster, they have to conform to this monolithic build system. Aside from the &quot;one build to rule them all&quot; approach, building an android app is a very complicated procedure. This isn&#39;t &quot;compile and run&quot; like you find in other types of projects, these are the steps to build a basic, runable android application <a href="http://developer.android.com/tools/building/index.html#detailed-build" target="_blank" rel="external">illustrated here</a></p>
+<ul>
+<li>Compile layouts, resources, etc into a resource file.</li>
+<li>Generate an R.java source file, this is needed just to be able to compile your code.</li>
+<li>Compile your real code.</li>
+<li>Turn your .class files into .dex files.</li>
+<li>Combine your resource file with your .dex files into an .apk.</li>
+<li>Sign your .apk.</li>
+<li>Finally we get to run!</li>
+</ul>
+<p>So to create a build system how you want it, you have to replicate all this with little to no documentation. And this is what I&#39;m about to do.</p>
+<p>##Step 1 - House Keeping</p>
+<p>The first thing we have to do when defining our build is to know where the android sdk, our libraries and everything else is, so in ant we have:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"android.sdk"</span> <span class="attr">location</span>=<span class="string">"D:\Program Files (x86)\Android\android-studio\sdk"</span> /&gt;</span>  </span><br><span class="line"><span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"android.aapt"</span> <span class="attr">location</span>=<span class="string">"$&#123;android.sdk&#125;\build-tools\android-4.4.2\aapt.exe"</span> /&gt;</span>  </span><br><span class="line"><span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"android.jar"</span> <span class="attr">location</span>=<span class="string">"$&#123;android.sdk&#125;\platforms\android-19\android.jar"</span> /&gt;</span>  </span><br><span class="line"><span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"android.dex"</span> <span class="attr">location</span>=<span class="string">"$&#123;android.sdk&#125;\build-tools\android-4.4.2\dx.bat"</span> /&gt;</span>  </span><br><span class="line"><span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"android.adb"</span> <span class="attr">location</span>=<span class="string">"$&#123;android.sdk&#125;\platform-tools\adb.exe"</span> /&gt;</span>  </span><br><span class="line"><span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"build.resource"</span> <span class="attr">location</span>=<span class="string">"build\aapt\resource.jar"</span> /&gt;</span>  </span><br><span class="line">	</span><br><span class="line"><span class="tag">&lt;<span class="name">record</span> <span class="attr">name</span>=<span class="string">"buildlog.txt"</span> <span class="attr">action</span>=<span class="string">"start"</span> <span class="attr">append</span>=<span class="string">"false"</span> /&gt;</span>  </span><br><span class="line">    </span><br><span class="line"><span class="tag">&lt;<span class="name">path</span> <span class="attr">id</span>=<span class="string">"libPackage"</span>&gt;</span>  </span><br><span class="line">	<span class="tag">&lt;<span class="name">fileset</span> <span class="attr">dir</span>=<span class="string">"lib\"</span>&gt;</span>  </span><br><span class="line">		<span class="tag">&lt;<span class="name">include</span> <span class="attr">name</span>=<span class="string">"android-binding-0.45-update.jar"</span> /&gt;</span>  </span><br><span class="line">		<span class="tag">&lt;<span class="name">include</span> <span class="attr">name</span>=<span class="string">"guice-2.0-no_aop.jar"</span> /&gt;</span>  </span><br><span class="line">	<span class="tag">&lt;<span class="name">include</span> <span class="attr">name</span>=<span class="string">"roboguice-1.1.2.jar"</span> /&gt;</span>  </span><br><span class="line"><span class="tag">&lt;/<span class="name">fileset</span>&gt;</span>  </span><br><span class="line"><span class="tag">&lt;/<span class="name">path</span>&gt;</span>  </span><br><span class="line"><span class="tag">&lt;<span class="name">path</span> <span class="attr">id</span>=<span class="string">"libApp"</span>&gt;</span>  </span><br><span class="line">	<span class="tag">&lt;<span class="name">pathelement</span> <span class="attr">location</span>=<span class="string">"$&#123;android.jar&#125;"</span> /&gt;</span>  </span><br><span class="line">	<span class="tag">&lt;<span class="name">path</span> <span class="attr">refid</span>=<span class="string">"libPackage"</span> /&gt;</span>  </span><br><span class="line"><span class="tag">&lt;/<span class="name">path</span>&gt;</span>  </span><br><span class="line"><span class="tag">&lt;<span class="name">path</span> <span class="attr">id</span>=<span class="string">"libTest"</span>&gt;</span>  </span><br><span class="line">	<span class="tag">&lt;<span class="name">fileset</span> <span class="attr">dir</span>=<span class="string">"lib\"</span>&gt;</span>  </span><br><span class="line">	<span class="tag">&lt;<span class="name">include</span> <span class="attr">name</span>=<span class="string">"hamcrest-core-1.3.jar"</span> /&gt;</span>  </span><br><span class="line">	<span class="tag">&lt;<span class="name">include</span> <span class="attr">name</span>=<span class="string">"junit-4.11.jar"</span> /&gt;</span>  </span><br><span class="line"><span class="tag">&lt;/<span class="name">fileset</span>&gt;</span>  </span><br><span class="line">	</span><br><span class="line"><span class="tag">&lt;<span class="name">pathconvert</span> <span class="attr">property</span>=<span class="string">"info.libPackage"</span> <span class="attr">refid</span>=<span class="string">"libPackage"</span> <span class="attr">pathsep</span>=<span class="string">";&amp;#10;"</span> /&gt;</span>  </span><br><span class="line"><span class="tag">&lt;<span class="name">pathconvert</span> <span class="attr">property</span>=<span class="string">"info.libApp"</span> <span class="attr">refid</span>=<span class="string">"libApp"</span> <span class="attr">pathsep</span>=<span class="string">";&amp;#10;"</span> /&gt;</span>  </span><br><span class="line"><span class="tag">&lt;<span class="name">pathconvert</span> <span class="attr">property</span>=<span class="string">"info.libTest"</span> <span class="attr">refid</span>=<span class="string">"libTest"</span> <span class="attr">pathsep</span>=<span class="string">";&amp;#10;"</span> /&gt;</span>  </span><br><span class="line">	</span><br><span class="line"><span class="tag">&lt;<span class="name">echo</span> <span class="attr">message</span>=<span class="string">"android.sdk: $&#123;android.sdk&#125;"</span> /&gt;</span>  </span><br><span class="line"><span class="tag">&lt;<span class="name">echo</span> <span class="attr">message</span>=<span class="string">"android.aapt: $&#123;android.aapt&#125;"</span> /&gt;</span>  </span><br><span class="line"><span class="tag">&lt;<span class="name">echo</span> <span class="attr">message</span>=<span class="string">"android.jar: $&#123;android.jar&#125;"</span> /&gt;</span>  </span><br><span class="line"><span class="tag">&lt;<span class="name">echo</span> <span class="attr">message</span>=<span class="string">"android.dex: $&#123;android.dex&#125;"</span> /&gt;</span>  </span><br><span class="line"><span class="tag">&lt;<span class="name">echo</span> <span class="attr">message</span>=<span class="string">"build.resource: $&#123;build.resource&#125;"</span> /&gt;</span>  </span><br><span class="line">	</span><br><span class="line"><span class="tag">&lt;<span class="name">echo</span> <span class="attr">message</span>=<span class="string">"libPackage:"</span> /&gt;</span>  </span><br><span class="line"><span class="tag">&lt;<span class="name">echo</span> <span class="attr">message</span>=<span class="string">"$&#123;info.libPackage&#125;"</span> /&gt;</span>  </span><br><span class="line"><span class="tag">&lt;<span class="name">echo</span> <span class="attr">message</span>=<span class="string">"libApp"</span> /&gt;</span>  </span><br><span class="line"><span class="tag">&lt;<span class="name">echo</span> <span class="attr">message</span>=<span class="string">"$&#123;info.libApp&#125;"</span> /&gt;</span>  </span><br><span class="line"><span class="tag">&lt;<span class="name">echo</span> <span class="attr">message</span>=<span class="string">"libTest"</span> /&gt;</span>  </span><br><span class="line"><span class="tag">&lt;<span class="name">echo</span> <span class="attr">message</span>=<span class="string">"$&#123;info.libTest&#125;"</span> /&gt;</span></span><br></pre></td></tr></table></figure>
+<p>It might seem a bit verbose but having everything defined here and having the actual values in the output will make debugging a lot simpler. libPackage are the bare minimum of libraries that we need to deploy with our app. libApp is the superset of these that we need to compile, basically libPackage + android.jar. libTest is a superset of that which includes libraries like junit.</p>
+<p>Our first two real targets are the clean and init ones:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">target</span> <span class="attr">name</span>=<span class="string">"clean"</span>&gt;</span>   </span><br><span class="line">	<span class="tag">&lt;<span class="name">delete</span> <span class="attr">dir</span>=<span class="string">"build"</span> /&gt;</span>   </span><br><span class="line"><span class="tag">&lt;/<span class="name">target</span>&gt;</span>   </span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">target</span> <span class="attr">name</span>=<span class="string">"init"</span>&gt;</span>   </span><br><span class="line">	<span class="tag">&lt;<span class="name">tstamp</span>/&gt;</span>   </span><br><span class="line">	<span class="tag">&lt;<span class="name">mkdir</span> <span class="attr">dir</span>=<span class="string">"$&#123;build&#125;"</span>/&gt;</span>   </span><br><span class="line">	<span class="tag">&lt;<span class="name">mkdir</span> <span class="attr">dir</span>=<span class="string">"$&#123;build&#125;\aapt\"</span>/&gt;</span>   </span><br><span class="line">	<span class="tag">&lt;<span class="name">mkdir</span> <span class="attr">dir</span>=<span class="string">"$&#123;build&#125;\javac\app"</span>/&gt;</span>   </span><br><span class="line">	<span class="tag">&lt;<span class="name">mkdir</span> <span class="attr">dir</span>=<span class="string">"$&#123;build&#125;\javac\test"</span>/&gt;</span>   </span><br><span class="line">	<span class="tag">&lt;<span class="name">mkdir</span> <span class="attr">dir</span>=<span class="string">"$&#123;build&#125;\dex"</span>/&gt;</span>   </span><br><span class="line"><span class="tag">&lt;/<span class="name">target</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>##Step 2: Compiling</p>
+<p>Next in line is compiling our project:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">target</span> <span class="attr">name</span>=<span class="string">"build"</span> <span class="attr">depends</span>=<span class="string">"init"</span> &gt;</span>   </span><br><span class="line">	<span class="tag">&lt;<span class="name">exec</span> <span class="attr">executable</span>=<span class="string">"$&#123;android.aapt&#125;"</span> <span class="attr">failonerror</span>=<span class="string">"true"</span>&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">arg</span> <span class="attr">value</span>=<span class="string">"package"</span> /&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">arg</span> <span class="attr">value</span>=<span class="string">"-f"</span> /&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">arg</span> <span class="attr">value</span>=<span class="string">"-v"</span> /&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">arg</span> <span class="attr">value</span>=<span class="string">"-M"</span> /&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">arg</span> <span class="attr">path</span>=<span class="string">"src\app\AndroidManifest.xml"</span> /&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">arg</span> <span class="attr">value</span>=<span class="string">"-A"</span> /&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">arg</span> <span class="attr">path</span>=<span class="string">"src\app\assets"</span> /&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">arg</span> <span class="attr">value</span>=<span class="string">"-I"</span> /&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">arg</span> <span class="attr">path</span>=<span class="string">"$&#123;android.jar&#125;"</span> /&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">arg</span> <span class="attr">value</span>=<span class="string">"-m"</span> /&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">arg</span> <span class="attr">value</span>=<span class="string">"-J"</span> /&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">arg</span> <span class="attr">path</span>=<span class="string">"build\aapt\"</span> /&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">arg</span> <span class="attr">value</span>=<span class="string">"-F"</span> /&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">arg</span> <span class="attr">path</span>=<span class="string">"$&#123;build.resource&#125;"</span> /&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">arg</span> <span class="attr">value</span>=<span class="string">"-S"</span> /&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">arg</span> <span class="attr">path</span>=<span class="string">"src\app\res"</span> /&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">arg</span> <span class="attr">value</span>=<span class="string">"--rename-manifest-package"</span> /&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">arg</span> <span class="attr">value</span>=<span class="string">"my.new.package.name"</span> /&gt;</span>   </span><br><span class="line">	<span class="tag">&lt;/<span class="name">exec</span>&gt;</span>   </span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="tag">&lt;<span class="name">javac</span> <span class="attr">destdir</span>=<span class="string">"build\javac\app"</span> <span class="attr">includeantruntime</span>=<span class="string">"false"</span> <span class="attr">classpathref</span>=<span class="string">"libApp"</span> &gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">src</span> <span class="attr">path</span>=<span class="string">"src\app\"</span> /&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">src</span> <span class="attr">path</span>=<span class="string">"build\aapt\com"</span> /&gt;</span>   </span><br><span class="line">	<span class="tag">&lt;/<span class="name">javac</span>&gt;</span>   </span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="tag">&lt;<span class="name">javac</span> <span class="attr">destdir</span>=<span class="string">"build\javac\test"</span> <span class="attr">includeantruntime</span>=<span class="string">"false"</span> <span class="attr">classpathref</span>=<span class="string">"libTest"</span> &gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">src</span> <span class="attr">path</span>=<span class="string">"src\test\"</span> /&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">classpath</span>&gt;</span>   </span><br><span class="line">			<span class="tag">&lt;<span class="name">pathelement</span> <span class="attr">location</span>=<span class="string">"build\javac\app"</span>/&gt;</span>   </span><br><span class="line">			<span class="tag">&lt;<span class="name">path</span> <span class="attr">refid</span>=<span class="string">"libTest"</span>/&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;/<span class="name">classpath</span>&gt;</span>   </span><br><span class="line">	<span class="tag">&lt;/<span class="name">javac</span>&gt;</span>   </span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;/<span class="name">target</span>&gt;</span>  </span><br><span class="line">`</span><br></pre></td></tr></table></figure>
+<p>The first and most unfamiliar one is where we invoke the aapt tool. I honestly don&#39;t know what half of these options are because it&#39;s so poorly documented but the important ones are:</p>
+<pre><code>-M The location of your android manifest file.
+-I The location of the android.jar that your using.
+-J The location of the R.java file (needed to compile your real code).
+-F The location of the generated resource.jar.
+-S The location of your resource files.
+</code></pre><p>The first javac compiles our actual application, referencing the libApp libraries. The source files used are src\app (Application code) and build\aapt\com (R.java). The second compiles our unit tests, making sure to add our application .class files to the classpath.</p>
+<p>##Step 3: Testing</p>
+<p>This is a very generic task that runs our unit tests. For java developers it should look fairly standard, just run junit with our compiled .class files and libTest libraries in the classpath:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">target</span> <span class="attr">name</span>=<span class="string">"test"</span> <span class="attr">depends</span>=<span class="string">"init, build"</span> &gt;</span>   </span><br><span class="line">	<span class="tag">&lt;<span class="name">junit</span> <span class="attr">haltonerror</span>=<span class="string">"true"</span> <span class="attr">haltonfailure</span>=<span class="string">"false"</span> <span class="attr">enableTestListenerEvents</span>=<span class="string">"true"</span>&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">classpath</span> &gt;</span>   </span><br><span class="line">			<span class="tag">&lt;<span class="name">pathelement</span> <span class="attr">location</span>=<span class="string">"build\javac\app"</span>/&gt;</span>   </span><br><span class="line">			<span class="tag">&lt;<span class="name">pathelement</span> <span class="attr">location</span>=<span class="string">"build\javac\test"</span>/&gt;</span>   </span><br><span class="line">			<span class="tag">&lt;<span class="name">path</span> <span class="attr">refid</span>=<span class="string">"libTest"</span>/&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;/<span class="name">classpath</span>&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;<span class="name">batchtest</span>&gt;</span>   </span><br><span class="line">			<span class="tag">&lt;<span class="name">fileset</span> <span class="attr">dir</span>=<span class="string">"build\javac\test"</span> <span class="attr">includes</span>=<span class="string">"**/*.class"</span> /&gt;</span>   </span><br><span class="line">			<span class="tag">&lt;<span class="name">formatter</span> <span class="attr">type</span>=<span class="string">"plain"</span> <span class="attr">usefile</span>=<span class="string">"false"</span>/&gt;</span>   </span><br><span class="line">		<span class="tag">&lt;/<span class="name">batchtest</span>&gt;</span>   </span><br><span class="line">	<span class="tag">&lt;/<span class="name">junit</span>&gt;</span>   </span><br><span class="line"><span class="tag">&lt;/<span class="name">target</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>At this point we&#39;ve create our standard &quot;build&quot;. It is completely independent of the IDE. with VI for example, I simply type :mak<enter> and all my tests are run in approximately 4 seconds for fast feedback.</enter></p>
+<p>Unfortunately unit tests aren&#39;t enough and we will want to actually run our app. In the next article I&#39;ll cover packaging, signing and deploying. </p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2014/08/19/2014_08_19_Android-Take-back-your-builds/" data-id="cin1538py0014k4uy3t2q0z36" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2014/08/19/2014_08_19_Android-Take-back-your-builds/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/android/">android</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/build/">build</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2014/09/02/2014_09_02_Appveyor-Impressions/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          Appveyor Impressions
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2013/12/15/2013_12_15_ORM-vs-SQL-3-Filtering/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">ORM vs SQL Part 3 - Filtering</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+<section id="comments">
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AAATest/">AAATest</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/android/">android</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/app-harbor/">app harbor</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/architecture/">architecture</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/build/">build</a><span class="tag-list-count">8</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/c/">c#</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general/">general</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general-programming/">general programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/integration-test/">integration test</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/msbuild/">msbuild</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nServiceBus/">nServiceBus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nant/">nant</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nunit/">nunit</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/orm/">orm</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/powershell/">powershell</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/psake/">psake</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/scm/">scm</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sql/">sql</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unit-test/">unit test</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/AAATest/" style="font-size: 12.5px;">AAATest</a> <a href="/tags/android/" style="font-size: 10px;">android</a> <a href="/tags/app-harbor/" style="font-size: 10px;">app harbor</a> <a href="/tags/architecture/" style="font-size: 15px;">architecture</a> <a href="/tags/build/" style="font-size: 20px;">build</a> <a href="/tags/c/" style="font-size: 15px;">c#</a> <a href="/tags/general/" style="font-size: 10px;">general</a> <a href="/tags/general-programming/" style="font-size: 10px;">general programming</a> <a href="/tags/integration-test/" style="font-size: 10px;">integration test</a> <a href="/tags/msbuild/" style="font-size: 15px;">msbuild</a> <a href="/tags/nServiceBus/" style="font-size: 10px;">nServiceBus</a> <a href="/tags/nant/" style="font-size: 12.5px;">nant</a> <a href="/tags/nunit/" style="font-size: 10px;">nunit</a> <a href="/tags/orm/" style="font-size: 15px;">orm</a> <a href="/tags/powershell/" style="font-size: 12.5px;">powershell</a> <a href="/tags/psake/" style="font-size: 10px;">psake</a> <a href="/tags/scm/" style="font-size: 10px;">scm</a> <a href="/tags/sql/" style="font-size: 17.5px;">sql</a> <a href="/tags/unit-test/" style="font-size: 15px;">unit test</a> <a href="/tags/vim/" style="font-size: 12.5px;">vim</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">August 2015</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/07/">July 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/03/">March 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/09/">September 2014</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/08/">August 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/12/">December 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/09/">September 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/03/">March 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/01/">January 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/08/">August 2011</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/06/">June 2011</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/04/">April 2011</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recents</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2016/04/14/2016_04_15_Background-Builds-with-Vim-8/">Background Builds with Vim 8</a>
+          </li>
+        
+          <li>
+            <a href="/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/">ORM vs SQL Part 1 - Paging</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/24/2015_07_24_Simple-Abstractions/">Simple Abstractions</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/09/2015_07_09-Interfaces-for-Data/">Simple Interfaces for Data</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/03/2015_07_03-Vim-errorformat-Demystified/">Vim errorformat Demystified</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2016 Luke Usher<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+<script>
+  var disqus_shortname = 'proactivelylazy';
+  
+  var disqus_url = 'http://flukus.github.io/2014/08/19/2014_08_19_Android-Take-back-your-builds/';
+  
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

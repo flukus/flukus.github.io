@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>Simple Abstractions | Proactively Lazy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Most of us agree by now that the single responsibility principle is a good idea.
+Small, composable parts are easy to read, write, test and maintain.
+This introduces another issue though, wiring these">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Simple Abstractions">
+<meta property="og:url" content="http://flukus.github.io/2015/07/24/2015_07_24_Simple-Abstractions/index.html">
+<meta property="og:site_name" content="Proactively Lazy">
+<meta property="og:description" content="Most of us agree by now that the single responsibility principle is a good idea.
+Small, composable parts are easy to read, write, test and maintain.
+This introduces another issue though, wiring these">
+<meta property="og:updated_time" content="2015-08-11T23:38:44.926Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Simple Abstractions">
+<meta name="twitter:description" content="Most of us agree by now that the single responsibility principle is a good idea.
+Small, composable parts are easy to read, write, test and maintain.
+This introduces another issue though, wiring these">
+  
+    <link rel="alternative" href="/atom.xml" title="Proactively Lazy" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+</head>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Proactively Lazy</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://flukus.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-2015_07_24_Simple-Abstractions" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/07/24/2015_07_24_Simple-Abstractions/" class="article-date">
+  <time datetime="2015-07-23T14:00:00.000Z" itemprop="datePublished">2015-07-24</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Simple Abstractions
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Most of us agree by now that the single responsibility principle is a good idea.
+Small, composable parts are easy to read, write, test and maintain.</p>
+<p>This introduces another issue though, wiring these components together.
+IOC containers do a great job of constructing our object graphs,
+but our components still have to specify their dependencies.</p>
+<p>Writing essentially the same constructor code over and over gets old fast.
+Typically projects will resort to some combination of property injection or the service locater pattern to avoid this.
+Neither of these options is particularly helpful from a code readability or unit testing point of view.</p>
+<p>So how do we get the benefits of the single responsibility principle without the drawbacks?
+First we have to take a step back and look at our interactions.
+Lets look at the interactions of a controller in a typical MVC application.</p>
+<p>##What does a controller do?</p>
+<p>A controller is responsible for coordinating the interaction between the user interface and the rest of the application.</p>
+<p>The user interface is how we interact with the users themselves,
+usually be returning some HTML via a view or some json data.
+Often we will also return some type of message to the user or redirect the user to another page.</p>
+<p>The rest of the application could be just about anything.
+Typically there will be some type of database to read/write from, some sort of logging,
+some sort of message queue, etc.
+The specifics will vary from application to application.</p>
+<p>So let&#39;s see what happens when we model these interactions with the IUser and IApplication interfaces.</p>
+<p>##IUser</p>
+<p>Here is what an IUser interface may look like:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">public interface IUser &#123;</span><br><span class="line">  public string UserName  &#123; get; &#125;</span><br><span class="line">  public int Id &#123; get; set; &#125;</span><br><span class="line">  public string[] Roles &#123; get; set; &#125;</span><br><span class="line"></span><br><span class="line">  public void Notify(string message);</span><br><span class="line">  public void Warn(string message);</span><br><span class="line">  public T Session&lt;T&gt;(string index);</span><br><span class="line">  public ActionResult Redirect();</span><br><span class="line">  public ActionResult Redirect(string location);</span><br><span class="line">  public ActionResult View();</span><br><span class="line">  public ActionResult View(object model);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The first few properties are some general information about the user that the controller will need either directly or indirectly.
+Other components may need this information, but as the coordinator it should be the controller passing it along.</p>
+<p>Next there is the Notify and Warn methods, this is how the controller can communicate with the user.
+A success or failure method would be sent to the user via these methods.
+The actual implementation would store this somewhere and make it available to the view.</p>
+<p>Session is our temporary storage area.
+Because sessions are per user, the IUser interface is the natural place to put it.</p>
+<p>The rest of the methods deal with returning action results.
+Depending on the design you may or may need to return a result from an MVC action.</p>
+<p>##IApplication</p>
+<p>An IApplication interface could look something like this:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">public interface IApplication &#123;</span><br><span class="line">  public void LogMessage(string message);</span><br><span class="line">  public void LogError(string message);</span><br><span class="line">  public void PublishMessage(object message);</span><br><span class="line">  public Query&lt;T&gt; Query&lt;T&gt;();</span><br><span class="line">  public Map&lt;T, U&gt;(T mapFrom);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>The log methods are self explanatory.
+PublishMessage will publish the message to a message queue.
+Query<t> will delegate to the CQRS sub system and Map will delegate to automapper.</t></p>
+<p>The actual specifics will vary tremendously from project to project.</p>
+<p>#Single Responsibility Principle</p>
+<p>It is natural to assume that any implementation of these interfaces will violate the single responsibility principle,
+that they would be handling many unrelated tasks.</p>
+<p>This is where the facade pattern comes in.
+An implementation of these interfaces should be a facade only,
+They should contain no real logic, simply pass arguments to a real implementation.</p>
+<p>They only responsibility of these implementations is to delegate:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">public class System : IApplication &#123;</span><br><span class="line">  private readonly ILog Log;</span><br><span class="line">  private readonly IBus Bus;</span><br><span class="line">  private readonly ISession Session;</span><br><span class="line"></span><br><span class="line">  public System(ILog log, IBus bus, ISession session) &#123;</span><br><span class="line">    Log = log;</span><br><span class="line">    Bus = bus;</span><br><span class="line">    Session = Session;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  public void LogMessage(string message) &#123;</span><br><span class="line">    Log.LogMessage(message);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  /* ... */</span><br><span class="line"></span><br><span class="line">  public Query&lt;T&gt; Query&lt;T&gt;() &#123;</span><br><span class="line">    return Session.Query&lt;T&gt;();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>So now we have a system with many small, testable components.
+Our controllers only have two dependencies to worry about.
+And finally, our IOC container can construct our object graph purely from constructors.</p>
+<p>We&#39;ve got all the benefits of SRP and IOC, with none of the downsides.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2015/07/24/2015_07_24_Simple-Abstractions/" data-id="cin1538qu001ok4uygyho71f5" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2015/07/24/2015_07_24_Simple-Abstractions/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/architecture/">architecture</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/c/">c#</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          ORM vs SQL Part 1 - Paging
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2015/07/09/2015_07_09-Interfaces-for-Data/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Simple Interfaces for Data</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+<section id="comments">
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AAATest/">AAATest</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/android/">android</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/app-harbor/">app harbor</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/architecture/">architecture</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/build/">build</a><span class="tag-list-count">8</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/c/">c#</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general/">general</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general-programming/">general programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/integration-test/">integration test</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/msbuild/">msbuild</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nServiceBus/">nServiceBus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nant/">nant</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nunit/">nunit</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/orm/">orm</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/powershell/">powershell</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/psake/">psake</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/scm/">scm</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sql/">sql</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unit-test/">unit test</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/AAATest/" style="font-size: 12.5px;">AAATest</a> <a href="/tags/android/" style="font-size: 10px;">android</a> <a href="/tags/app-harbor/" style="font-size: 10px;">app harbor</a> <a href="/tags/architecture/" style="font-size: 15px;">architecture</a> <a href="/tags/build/" style="font-size: 20px;">build</a> <a href="/tags/c/" style="font-size: 15px;">c#</a> <a href="/tags/general/" style="font-size: 10px;">general</a> <a href="/tags/general-programming/" style="font-size: 10px;">general programming</a> <a href="/tags/integration-test/" style="font-size: 10px;">integration test</a> <a href="/tags/msbuild/" style="font-size: 15px;">msbuild</a> <a href="/tags/nServiceBus/" style="font-size: 10px;">nServiceBus</a> <a href="/tags/nant/" style="font-size: 12.5px;">nant</a> <a href="/tags/nunit/" style="font-size: 10px;">nunit</a> <a href="/tags/orm/" style="font-size: 15px;">orm</a> <a href="/tags/powershell/" style="font-size: 12.5px;">powershell</a> <a href="/tags/psake/" style="font-size: 10px;">psake</a> <a href="/tags/scm/" style="font-size: 10px;">scm</a> <a href="/tags/sql/" style="font-size: 17.5px;">sql</a> <a href="/tags/unit-test/" style="font-size: 15px;">unit test</a> <a href="/tags/vim/" style="font-size: 12.5px;">vim</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">August 2015</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/07/">July 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/03/">March 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/09/">September 2014</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/08/">August 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/12/">December 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/09/">September 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/03/">March 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/01/">January 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/08/">August 2011</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/06/">June 2011</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/04/">April 2011</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recents</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2016/04/14/2016_04_15_Background-Builds-with-Vim-8/">Background Builds with Vim 8</a>
+          </li>
+        
+          <li>
+            <a href="/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/">ORM vs SQL Part 1 - Paging</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/24/2015_07_24_Simple-Abstractions/">Simple Abstractions</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/09/2015_07_09-Interfaces-for-Data/">Simple Interfaces for Data</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/03/2015_07_03-Vim-errorformat-Demystified/">Vim errorformat Demystified</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2016 Luke Usher<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+<script>
+  var disqus_shortname = 'proactivelylazy';
+  
+  var disqus_url = 'http://flukus.github.io/2015/07/24/2015_07_24_Simple-Abstractions/';
+  
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>

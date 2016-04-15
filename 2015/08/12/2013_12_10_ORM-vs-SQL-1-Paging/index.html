@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>ORM vs SQL Part 1 - Paging | Proactively Lazy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="In this series of posts I want to talk about the real world ramifications of not using an ORM for application development and why falling back to SQL and stored procedures is a poor choice.
+Quite ofte">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ORM vs SQL Part 1 - Paging">
+<meta property="og:url" content="http://flukus.github.io/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/index.html">
+<meta property="og:site_name" content="Proactively Lazy">
+<meta property="og:description" content="In this series of posts I want to talk about the real world ramifications of not using an ORM for application development and why falling back to SQL and stored procedures is a poor choice.
+Quite ofte">
+<meta property="og:updated_time" content="2015-08-11T23:38:44.859Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ORM vs SQL Part 1 - Paging">
+<meta name="twitter:description" content="In this series of posts I want to talk about the real world ramifications of not using an ORM for application development and why falling back to SQL and stored procedures is a poor choice.
+Quite ofte">
+  
+    <link rel="alternative" href="/atom.xml" title="Proactively Lazy" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+</head>
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Proactively Lazy</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://flukus.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-2013_12_10_ORM-vs-SQL-1-Paging" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/" class="article-date">
+  <time datetime="2015-08-11T23:38:44.856Z" itemprop="datePublished">2015-08-12</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      ORM vs SQL Part 1 - Paging
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>In this series of posts I want to talk about the real world ramifications of not using an ORM for application development and why falling back to SQL and stored procedures is a poor choice.</p>
+<p>Quite often the argument seems to be that an SQL select and a few joins is simple and effective (which it is), and that ORM&#39;s are a useless abstraction. The problem is that simple selects don&#39;t get you very far, even when creating the CRUDiest of applications.</p>
+<p>In real applications, we have to do paging, sorting (dynamically), joining (dynamically) and filtering (dynamically). That&#39;s just on the read side, not even considering what an ORM can do for you when your writing data. I&#39;m going to go through the abstractions an ORM provide and show how they make life easier for us.</p>
+<p>Some caveats before I go on:</p>
+<ul>
+<li>I&#39;m talking about general application development, web, desktop or mobile doesn&#39;t really matter here.</li>
+<li>I&#39;m talking about general line of business applications. If your working on something more exotic you may have legitimate needs that an ORM doesn&#39;t cater for.</li>
+<li>The ORM I&#39;m using will be nHibernate, but the same applies to all ORM&#39;s.</li>
+<li>I&#39;ll mostly be talking about Sql Server.</li>
+<li>Stored procedures have there place, if your ORM creating a legitimate bottleneck you should feel free to work around it entirely.</li>
+</ul>
+<p>This part goes over paging, <a href="ORM-vs-SQL-2---Ordering">Part Two</a> goes over ordering and <a href="ORM-vs_SQL-3---Filtering">Part Three</a> goes over filtering</p>
+<p>#Paging with an ORM</p>
+<p>Here is an example of paging a list with nHibernate, it&#39;s simple and it works, I don&#39;t even have to bother explaining it</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Session.QueryOver&lt;Product&gt;().Skip(20).Take(10)</span><br></pre></td></tr></table></figure>
+<p>#Paging with SQL</p>
+<p>I&#39;m going to assume Sql Server here but it varies from database to database. Before we go down that path I will also say that database independence is not a good reason to use an ORM.</p>
+<p>A quick Google search for sql paging will give you quite a number of different possibilities. MySQL, for all it&#39;s faults, at least includes the ability to say &quot;LIMIT 20, 10&quot;, which means skip 20, take 10. Those of use working with Sql Server aren&#39;t so lucky, it blows my mind that such a common scenario wasn&#39;t at the forefront of developers minds when Sql Server was first created and they&#39;ve had to add various hacks over the last decade. Now that we can (hopefully) pretend that Sql Server 2000 no longer exists the best option seems to be:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> TOP (@take) <span class="keyword">id</span>, <span class="keyword">name</span></span><br><span class="line"><span class="keyword">FROM</span> (</span><br><span class="line">  <span class="keyword">SELECT</span> <span class="keyword">id</span>, <span class="keyword">name</span>, ROW_NUMBER() <span class="keyword">OVER</span>(<span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="keyword">name</span>) <span class="keyword">as</span> rownumber</span><br><span class="line">  <span class="keyword">FROM</span> products</span><br><span class="line">) <span class="keyword">as</span> <span class="keyword">query</span></span><br><span class="line"><span class="keyword">WHERE</span> query.rownumber &gt; @<span class="keyword">skip</span></span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> query.name</span><br></pre></td></tr></table></figure>
+<p>This has good performance, it&#39;s relatively simple and it works well with dynamic ordering (check), which I&#39;ll get to in part two. This is exactly the sql that nHibernate will generate for you. Another possibility, as of Sql Server 2012 is:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> *</span><br><span class="line"><span class="keyword">FROM</span> products</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="keyword">name</span> <span class="keyword">OFFSET</span> @<span class="keyword">skip</span> <span class="keyword">ROWS</span> <span class="keyword">FETCH</span> <span class="keyword">NEXT</span> @take <span class="keyword">ROWS</span> <span class="keyword">ONLY</span></span><br></pre></td></tr></table></figure>
+<p>While still lacking the elegance of MySQL, it works and is faster than the previous example. Throw in dynamic ordering though (part 2) and the performance goes out the window. There are other possibilities I haven&#39;t covered, the pros and cons of each is worth it&#39;s own blog series, though I won&#39;t be the one writing it (if you know of one, let me know and I will link it here).</p>
+<p>The dumbest one I&#39;ve seen, unfortunately the most common also, is to page on the client side (client being the application, not end user). The idea seems to be that you cache entire result sets and filter/order it in application code. People actually think this performs better, but I&#39;ll save this for a longer rant later.</p>
+<p>#That doesn&#39;t seem too bad</p>
+<p>Well it isn&#39;t too bad but it&#39;s not such a simple query anymore. This extra complexity goes into nearly every query in the application, so it&#39;s a non-trivial amount of extra code to maintain. In later posts we&#39;ll see how this complexity is multiplied by other, equally necessary features.</p>
+<p>Finally, compare it with the simplicity of doing the same in an ORM, which will execute the exact same query and perform the same, all that extra code starts to look pretty meaningless.</p>
+<p>In <a href="ORM-vs-SQL-2---Ordering">part two</a> I&#39;ll take a look at dynamic ordering.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/" data-id="cin1538on000tk4uykxw41o3q" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/orm/">orm</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/sql/">sql</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2016/04/14/2016_04_15_Background-Builds-with-Vim-8/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          Background Builds with Vim 8
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2015/07/24/2015_07_24_Simple-Abstractions/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Simple Abstractions</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+<section id="comments">
+  <div id="disqus_thread">
+    <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  </div>
+</section>
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AAATest/">AAATest</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/android/">android</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/app-harbor/">app harbor</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/architecture/">architecture</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/build/">build</a><span class="tag-list-count">8</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/c/">c#</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general/">general</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general-programming/">general programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/integration-test/">integration test</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/msbuild/">msbuild</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nServiceBus/">nServiceBus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nant/">nant</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nunit/">nunit</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/orm/">orm</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/powershell/">powershell</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/psake/">psake</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/scm/">scm</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sql/">sql</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unit-test/">unit test</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">2</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/AAATest/" style="font-size: 12.5px;">AAATest</a> <a href="/tags/android/" style="font-size: 10px;">android</a> <a href="/tags/app-harbor/" style="font-size: 10px;">app harbor</a> <a href="/tags/architecture/" style="font-size: 15px;">architecture</a> <a href="/tags/build/" style="font-size: 20px;">build</a> <a href="/tags/c/" style="font-size: 15px;">c#</a> <a href="/tags/general/" style="font-size: 10px;">general</a> <a href="/tags/general-programming/" style="font-size: 10px;">general programming</a> <a href="/tags/integration-test/" style="font-size: 10px;">integration test</a> <a href="/tags/msbuild/" style="font-size: 15px;">msbuild</a> <a href="/tags/nServiceBus/" style="font-size: 10px;">nServiceBus</a> <a href="/tags/nant/" style="font-size: 12.5px;">nant</a> <a href="/tags/nunit/" style="font-size: 10px;">nunit</a> <a href="/tags/orm/" style="font-size: 15px;">orm</a> <a href="/tags/powershell/" style="font-size: 12.5px;">powershell</a> <a href="/tags/psake/" style="font-size: 10px;">psake</a> <a href="/tags/scm/" style="font-size: 10px;">scm</a> <a href="/tags/sql/" style="font-size: 17.5px;">sql</a> <a href="/tags/unit-test/" style="font-size: 15px;">unit test</a> <a href="/tags/vim/" style="font-size: 12.5px;">vim</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">August 2015</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/07/">July 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/03/">March 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/09/">September 2014</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/08/">August 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/12/">December 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/09/">September 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/03/">March 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/01/">January 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/08/">August 2011</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/06/">June 2011</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/04/">April 2011</a><span class="archive-list-count">1</span></li></ul>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recents</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2016/04/14/2016_04_15_Background-Builds-with-Vim-8/">Background Builds with Vim 8</a>
+          </li>
+        
+          <li>
+            <a href="/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/">ORM vs SQL Part 1 - Paging</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/24/2015_07_24_Simple-Abstractions/">Simple Abstractions</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/09/2015_07_09-Interfaces-for-Data/">Simple Interfaces for Data</a>
+          </li>
+        
+          <li>
+            <a href="/2015/07/03/2015_07_03-Vim-errorformat-Demystified/">Vim errorformat Demystified</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2016 Luke Usher<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+<script>
+  var disqus_shortname = 'proactivelylazy';
+  
+  var disqus_url = 'http://flukus.github.io/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/';
+  
+  (function(){
+    var dsq = document.createElement('script');
+    dsq.type = 'text/javascript';
+    dsq.async = true;
+    dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>
