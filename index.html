@@ -61,6 +61,80 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-2016_07_27_Creating-a-Windows-Service" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2016/07/27/2016_07_27_Creating-a-Windows-Service/" class="article-date">
+  <time datetime="2016-07-26T14:00:00.000Z" itemprop="datePublished">2016-07-27</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2016/07/27/2016_07_27_Creating-a-Windows-Service/">Creating a Windows Service</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>Creating a windows service in .net is simple. Dead simple.
+Creating one that&#39;s pleasant to work with is only slightly more complicated.
+We&#39;re talking a couple of dozen LOC in total, it&#39;s that simple.</p>
+<p>This is why I&#39;ve never been able to understand the love for <a href="http://topshelf-project.com/" target="_blank" rel="external">Topshelf</a>.
+It adds another dependency to manage yet saves very little, if any, code.</p>
+<p>So I figured I&#39;d create a post to show just how easy it is.</p>
+<h2 id="Step-1-Create-the-App"><a href="#Step-1-Create-the-App" class="headerlink" title="Step 1 - Create the App"></a>Step 1 - Create the App</h2><p>First thing to do is to create the logic the service needs.
+This town crier example is straight from Topshelf&#39;s <a href="http://docs.topshelf-project.com/en/latest/configuration/quickstart.html" target="_blank" rel="external">show me the code</a> section:</p>
+<figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title">TownCrier</span> &#123;</span><br><span class="line">	<span class="keyword">readonly</span> Timer _timer;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">TownCrier</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">		_timer = <span class="keyword">new</span> Timer(<span class="number">1000</span>) &#123; AutoReset = <span class="literal">true</span> &#125;;</span><br><span class="line">		_timer.Elapsed += (sender, eventArgs) =&gt; Console.WriteLine(<span class="string">"It is &#123;0&#125; and all is well"</span>, DateTime.Now);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">Start</span>(<span class="params"></span>) </span>&#123; _timer.Start(); &#125;</span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">Stop</span>(<span class="params"></span>) </span>&#123; _timer.Stop(); &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Then we need to run it, this can be done withe a standard console app:</p>
+<figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title">Program</span> &#123;</span><br><span class="line">	<span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">Main</span>(<span class="params"><span class="keyword">string</span>[] args</span>) </span>&#123;</span><br><span class="line">		<span class="keyword">var</span> crier = <span class="keyword">new</span> TownCrier();</span><br><span class="line">		crier.Start();</span><br><span class="line">		System.Console.WriteLine(<span class="string">"press any key to quit"</span>);</span><br><span class="line">		System.Console.Read();</span><br><span class="line">		crier.Stop();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Nothing amazing yet.</p>
+<h2 id="Turn-it-into-a-Service"><a href="#Turn-it-into-a-Service" class="headerlink" title="Turn it into a Service"></a>Turn it into a Service</h2><p>Turning this into a service requires some extra communication with the OS.
+In .net this is handled by the ServiceBase class (you will need to add a reference to System.ServiceProcess).</p>
+<p>To create our own service, we just create a sub class and add our own logic:</p>
+<figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title">ServiceHost</span> : <span class="title">ServiceBase</span> &#123;</span><br><span class="line">	<span class="keyword">private</span> <span class="keyword">readonly</span> TownCrier TownCrier;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="title">ServiceHost</span>(<span class="params">TownCrier crier</span>) </span>&#123;</span><br><span class="line">		TownCrier = crier;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">protected</span> <span class="keyword">override</span> <span class="keyword">void</span> <span class="title">OnStart</span>(<span class="params"><span class="keyword">string</span>[] args</span>) </span>&#123;</span><br><span class="line">		TownCrier.Start();</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">protected</span> <span class="keyword">override</span> <span class="keyword">void</span> <span class="title">OnStop</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">		TownCrier.Stop();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Then modify our main method to run the host:</p>
+<figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">Main</span>(<span class="params"><span class="keyword">string</span>[] args</span>) </span>&#123;</span><br><span class="line">	<span class="keyword">var</span> crier = <span class="keyword">new</span> TownCrier();</span><br><span class="line">	System.ServiceProcess.ServiceBase.Run(<span class="keyword">new</span> ServiceHost(crier));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>If you run this, you&#39;ll see an error dialog displayed.
+This is because services cannot be run from a normal application.</p>
+<p>To handle this, we need to add a check to set what environment we&#39;re running in.
+This can be done with the System.Environment.UserInteractive property.
+If this is true, it means we are running the app as a user, false means it is running as a service.</p>
+<p>The main method then becomes a combination of the previous versions:</p>
+<figure class="highlight cs"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">Main</span>(<span class="params"><span class="keyword">string</span>[] args</span>) </span>&#123;</span><br><span class="line">	<span class="keyword">var</span> crier = <span class="keyword">new</span> TownCrier();</span><br><span class="line">	<span class="keyword">if</span> (System.Environment.UserInteractive) &#123;</span><br><span class="line">		crier.Start();</span><br><span class="line">		System.Console.WriteLine(<span class="string">"press any key to quit"</span>);</span><br><span class="line">		System.Console.Read();</span><br><span class="line">		crier.Stop();</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		System.ServiceProcess.ServiceBase.Run(<span class="keyword">new</span> ServiceHost(crier));</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>This way, when you run the app normally, or debug it, it behaves as a normal console app,
+but it can also now be run as a service. Let&#39;s create the service.</p>
+<h2 id="Create-a-Service"><a href="#Create-a-Service" class="headerlink" title="Create a Service"></a>Create a Service</h2><p>The sc tool is the one to use when dealing with windows services.
+It can be used to list create, start, stop and delete them.</p>
+<p>To create and start the service, open up a command prompt (with admin privileges) and enter these commands:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sc create TownCrier binpath= c:\path\to\bin\Debug\TownCrier.exe</span><br><span class="line">sc start TownCrier</span><br></pre></td></tr></table></figure>
+<p>You can verify it&#39;s running with this command:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sc query TownCrier</span><br></pre></td></tr></table></figure>
+<p>And that&#39;s all there is to it.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2016/07/27/2016_07_27_Creating-a-Windows-Service/" data-id="cir4v5f0t003fekuydk3jinue" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2016/07/27/2016_07_27_Creating-a-Windows-Service/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/c/">c#</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/one/">one</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-2016_04_15_Background-Builds-with-Vim-8" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2016/04/15/2016_04_15_Background-Builds-with-Vim-8/" class="article-date">
@@ -137,7 +211,7 @@ Hopefully the tired old saying of vim being &quot;just&quot; a text editor can f
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2016/04/15/2016_04_15_Background-Builds-with-Vim-8/" data-id="cin15h1er001pz4uy1qwy8y5u" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2016/04/15/2016_04_15_Background-Builds-with-Vim-8/" data-id="cir4v5ezs001sekuywx31ze3w" class="article-share-link">Share</a>
       
         <a href="http://flukus.github.io/2016/04/15/2016_04_15_Background-Builds-with-Vim-8/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -204,7 +278,7 @@ Hopefully the tired old saying of vim being &quot;just&quot; a text editor can f
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/" data-id="cin15h1da000vz4uyim082dd3" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/" data-id="cir4v5eyh000zekuy5jtoy1sx" class="article-share-link">Share</a>
       
         <a href="http://flukus.github.io/2015/08/12/2013_12_10_ORM-vs-SQL-1-Paging/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -296,7 +370,7 @@ And finally, our IOC container can construct our object graph purely from constr
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2015/07/24/2015_07_24_Simple-Abstractions/" data-id="cin15h1er001rz4uyvwd80cmt" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2015/07/24/2015_07_24_Simple-Abstractions/" data-id="cir4v5ezs001rekuyideke7ev" class="article-share-link">Share</a>
       
         <a href="http://flukus.github.io/2015/07/24/2015_07_24_Simple-Abstractions/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -403,7 +477,7 @@ Developers need to get over our habit trying to fit everything into a hierarchal
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2015/07/09/2015_07_09-Interfaces-for-Data/" data-id="cin15h1er001nz4uy3yrt36cz" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2015/07/09/2015_07_09-Interfaces-for-Data/" data-id="cir4v5ezs001oekuyse5jbyov" class="article-share-link">Share</a>
       
         <a href="http://flukus.github.io/2015/07/09/2015_07_09-Interfaces-for-Data/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -538,7 +612,7 @@ Hopefully I&#39;ve straightened out some misconceptions here.</p>
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2015/07/03/2015_07_03-Vim-errorformat-Demystified/" data-id="cin15h1er001lz4uykzvus3ei" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2015/07/03/2015_07_03-Vim-errorformat-Demystified/" data-id="cir4v5ezs001mekuyee6z0azl" class="article-share-link">Share</a>
       
         <a href="http://flukus.github.io/2015/07/03/2015_07_03-Vim-errorformat-Demystified/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -635,7 +709,7 @@ yet they are less capable of supporting it than there strongly types counterpart
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2015/03/14/2015_03_14_Strict-Typing-is-More-Dynamic/" data-id="cin15h1er001jz4uyyb4yg2yn" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2015/03/14/2015_03_14_Strict-Typing-is-More-Dynamic/" data-id="cir4v5ezd001kekuy91415f4b" class="article-share-link">Share</a>
       
         <a href="http://flukus.github.io/2015/03/14/2015_03_14_Strict-Typing-is-More-Dynamic/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -741,7 +815,7 @@ I can see how exposing powershell endpoints to my apps could make administration
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2015/03/13/2015_03_13_Powershell-is-a-Joke/" data-id="cin15h1eb001ez4uyb0hatngx" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2015/03/13/2015_03_13_Powershell-is-a-Joke/" data-id="cir4v5ezd001iekuyqzuigevu" class="article-share-link">Share</a>
       
         <a href="http://flukus.github.io/2015/03/13/2015_03_13_Powershell-is-a-Joke/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -834,7 +908,7 @@ I intend to go into this in another post, but until then here is the TLDR of why
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2015/03/12/2015_03_12_PSake-First-Impressions/" data-id="cin15h1er001gz4uye10lw2su" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2015/03/12/2015_03_12_PSake-First-Impressions/" data-id="cir4v5ezd001dekuylpvys707" class="article-share-link">Share</a>
       
         <a href="http://flukus.github.io/2015/03/12/2015_03_12_PSake-First-Impressions/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -884,99 +958,12 @@ I starting wondering if it should be a feature at all.</p>
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2014/09/03/2014_09_03_Test-Ignorance/" data-id="cin15h1ea001cz4uyehii3kmb" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2014/09/03/2014_09_03_Test-Ignorance/" data-id="cir4v5ezd001fekuysjxiq7qo" class="article-share-link">Share</a>
       
         <a href="http://flukus.github.io/2014/09/03/2014_09_03_Test-Ignorance/#disqus_thread" class="article-comment-link">Comments</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AAATest/">AAATest</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/unit-test/">unit test</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-2014_07_24_8-Biggest-Mistakes-of-Application-Architecture" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2014/09/02/2014_07_24_8-Biggest-Mistakes-of-Application-Architecture/" class="article-date">
-  <time datetime="2014-09-01T14:00:00.000Z" itemprop="datePublished">2014-09-02</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2014/09/02/2014_07_24_8-Biggest-Mistakes-of-Application-Architecture/">8 Biggest mistakes of Application Architecture</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>We spend a lot of time arguing of the minutiae of software development. Exceptions or return codes, dynamic or static typing, OO or functional. IMO these have much less to do with the quality of software produced than the architecture, yet we seem to spend less time discussing that. This is the big picture stuff that makes or breaks a product (and it&#39;s owners) and in my experience, terrible architecture seems to be the norm in the enterprise world.</p>
-<p>The following is a bit of a rant about some of the worst anti-patterns I&#39;ve seen in enterprise software. Each one I have experienced at several companies, though (usually) not all at once. Most of them are cargo cult practices, some can be traced back to official Microsoft guidance, some have no reason at all but just seem to exist anyway.</p>
-<p>#1. Logical structure != Physical structure</p>
-<p>I ran into this one just today. We have two services, a and b, that are different but related yet the share most/all of the same internal libraries. Let&#39;s pretend there are good reasons why these services need to be deployed on different machines, because sometimes there are. This does not mean they need to be in separate .csproj files.</p>
-<p>It&#39;s just as easy, perhaps even easier, to deploy a single application to multiple machines with different configurations.</p>
-<p>The physical deployment of an application does not have to be a 1:1 mapping with the solution structure.</p>
-<p>#2. Development is not Production</p>
-<p>On a similar note, it is often claimed that a developers machine should resemble production closely. I can&#39;t think of anything worse. The purpose of a development environment is to DEVELOP, anything that aids this endeavor is welcome, anything that inhibits it is not.</p>
-<p>I want to be developing. I don&#39;t care about how many configurations the application will be split into in production. I don&#39;t want to manage IIS application pools. I don&#39;t want to set up SSL certificates. I don&#39;t even want to have to go to the login screen every time I recompile. These are all production issues and you shouldn&#39;t have to deal with it unless your configuring a production environment.</p>
-<p>A good rule of thumb here is how long it takes a brand new developer to be setup. The answer should be minutes, not hours or days. I actually (very briefly) worked at a company that considered it normal for new developers to spend a week setting up there environment. Companies like this tend to receive the double blow of a week of downtime and a high turnover rate.</p>
-<p>It&#39;s been 15 years since this appeared at number 2 on the <a href="http://www.joelonsoftware.com/articles/fog0000000043.html" target="_blank" rel="external">Joel Test</a>. I&#39;m honestly amazed how many companies still screw it up.</p>
-<p>#3. The .csproj Fetish</p>
-<p>There are many good reasons to separate code into different projects. An MVC app and a WCF service might share common functionality in a library project (or maybe not, see 1). But there are just as many good reasons NOT to separate code into a million tiny assemblies.</p>
-<p>Recently I came across a solution that had 8 projects just to handle pdf conversion. HtmlToPdfConverter, JpegToPdfConverter, etc. Each project had a single class in a single file. The classes combined were barely long to deserve splitting up, let alone into a separate project each.</p>
-<p>All this achieves is to slow down build and debug times. MSBuild slows down dramatically as you increase the number of projects. Try feeding your source tree directly into csc and see just how c# code can be compiled.</p>
-<p>Long before IDE&#39;s held all our code together things were organized into folders. Fortunately, IDE&#39;s are capable if using this technological wizardry, giving us a very simple mechanism of grouping related functionality. Folders exist, use them!</p>
-<p>#4. Repositories on Repositories</p>
-<p>ORMs frequently get a bad wrap for generating n+1 queries, but in the world of enterprise architecture I all to often see a different cause: The Repository Pattern.</p>
-<p>ORMs actually come with a repository pattern built in. In nHibernate (which I&#39;ll use as my example) the repository is the ISession interface. It&#39;s simple and flexible, it can handle nearly every type of query you need and the ones it can&#39;t should probably not by performed by an ORM anyway.</p>
-<p>An architect or developer will come along and build there own repository on top of this one, but with less features and no flexibility. Just in case you want to change your database one day. How many of you have ever actually seen this happen?</p>
-<p>The problem with having data access behind a repository is that it has no context of what data is required for the task at hand. Does it need all the children of that entity? Should it load a parent entity? What should it filter by? It ends with a million permutations of a Find method that the ORM repository is perfectly capable of expressing.</p>
-<p>Why does this cause n+1 errors? Because it&#39;s abstracted the tool with the best way of resolving them.</p>
-<p>Advance Idiots will return a model with lazy loading. Essentially creating an ORM on an ORM.</p>
-<p>#5. The Service Layer.</p>
-<p>This one only applies to web apps. I&#39;m not talking about a logical service layer here, but a real physical one, usually with WCF as the glue. I think the root cause of this is the same as number 1, architects assuming the the physical structure and the logical structure need to completely match.</p>
-<p><a href="http://surana.wordpress.com/2009/01/01/numbers-everyone-should-know/" target="_blank" rel="external">Numbers everyone should know</a> are unfortunately numbers that architects don&#39;t seem to know. Getting data from RAM is a lot faster than getting it from a network. The service is also likely to make network connections of it&#39;s own, usually to a database. The end response time is cumulative, having to make multiple service calls quickly adds up. It won&#39;t even show up in a profiler.</p>
-<p>The most frequent justification I hear for this is scalability. Having a service layer on a different machine than the web server will somehow, magically, help the application scale in a way that having multiple web servers (maybe even a farm) will not. If the applications weren&#39;t spending so much time serializing objects and waiting for synchronous remote procedure calls then maybe they would scale a bit more linearly.</p>
-<p>The other justification I hear a lot is that service oriented architectures are considered good architecture. I&#39;ll probably save this for another rant, but a service layer and SOA are not synonyms, they are completely unrelated to one another.</p>
-<p>Advanced Idiots will combine this with the repository pattern and have n+1 issues spanning multiple network hops.</p>
-<p>Super advanced idiots will have services that call services that call services. Displaying a single piece of data to a user can cross a dozen network/process boundaries.</p>
-<p>Ultra advanced idiots will instantiate a service layer in it&#39;s own process every time a method needs to be called on it. Seriously, I&#39;ve seen this in a production environment handling millions of dollars a month.</p>
-<p>#6. Replacing new with Resolve</p>
-<p>This isn&#39;t an attack on IOC containers, I think they&#39;re great, but in the wrong hands they are disastrous. The concept is simple enough, that&#39;s why every man and his dog have created a toy IOC container, unfortunately a lot of people don&#39;t seem to get to the end of tutorial one.</p>
-<p>An IOC container is designed to wire up structural dependencies. If a class name ends with Service, Factory or Handler it is a good candidate to go in the container. If the methods of a class contain adjectives then it is a good candidate to go in the container. If a class name ends with Model, DTO, Request or Response then it probably should NOT go in the container. If a class frequently appears in a list it should probably NOT go in the container.</p>
-<p>If an application is full of calls to Resolve<t>() then it was built by someone who doesn&#39;t understand the basic concepts of IOC.</t></p>
-<p>Advanced Idiots will combine this with service layers (see number 5). I&#39;ve actually seen IOC containers used to resolve factories that call web services that resolve POCO objects. I&#39;ve actually had an architect that defended this as being good practice. I had to leave work at lunch time before the urge to kill became too great...</p>
-<p>#7. CRUD</p>
-<p>So many applications start out life as a simple forms-over-data interface. But using CRUD as the basis for an application architecture is doomed from the start. CRUD is built around the data model and non-developers are horrible at thinking about the data model, they really shouldn&#39;t have to.</p>
-<p>There is simple crud like active record, but this is about the more advanced CRUD operations. CRUD DAO&#39;s, CRUD Repositories, CRUD View Models, CRUD DTO&#39;s. So much work for such a limited pattern.</p>
-<p>The root of this, of course, is the developers innate desire to generalize common patterns and come up with elaborate use of generics to reduce the amount of code we have to write to solve the problem wrong.</p>
-<p>Software should be modeled around users and the actions they perform, not rows in a database.</p>
-<p>#8. Deployment</p>
-<p>The seems to be a rule that the more a company talk about being agile the worse their deployment procedures are. I would argue that being able to deploy frequently (dare I say continuously) is one of the defining features that show your agility as an organization.</p>
-<p>If you can not have a bug fix in a customers hands within minutes of bug fixed (excluding testing) then your organization is not agile. Telling users that they have to wait for next months deploy to have a critical issue fixed is not agile. Being unable to put up and tear down test environments on a whim is not agile.</p>
-<p>In far to many companies doing a production release is a nerve wracking affair that can consume several days. Number 1, 2 and 5 are the major causes of deployment headaches.</p>
-<p>#Conclusion</p>
-<p>The cause of every one of these issues has been the same, someone with architect in their title. We really should reconsider what the role of an architect is and if the should be involved with technical decisions, or involved at all.</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2014/09/02/2014_07_24_8-Biggest-Mistakes-of-Application-Architecture/" data-id="cin15h1dp0013z4uy94opovng" class="article-share-link">Share</a>
-      
-        <a href="http://flukus.github.io/2014/09/02/2014_07_24_8-Biggest-Mistakes-of-Application-Architecture/#disqus_thread" class="article-comment-link">Comments</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/architecture/">architecture</a></li></ul>
 
     </footer>
   </div>
@@ -1000,7 +987,7 @@ I starting wondering if it should be a feature at all.</p>
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AAATest/">AAATest</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/android/">android</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/app-harbor/">app harbor</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/architecture/">architecture</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/build/">build</a><span class="tag-list-count">8</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/c/">c#</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general/">general</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general-programming/">general programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/integration-test/">integration test</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/msbuild/">msbuild</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nServiceBus/">nServiceBus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nant/">nant</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nunit/">nunit</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/orm/">orm</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/powershell/">powershell</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/psake/">psake</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/scm/">scm</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sql/">sql</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unit-test/">unit test</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">2</span></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AAATest/">AAATest</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/android/">android</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/app-harbor/">app harbor</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/architecture/">architecture</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/build/">build</a><span class="tag-list-count">8</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/c/">c#</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general/">general</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general-programming/">general programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/integration-test/">integration test</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/msbuild/">msbuild</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nServiceBus/">nServiceBus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nant/">nant</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nunit/">nunit</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/one/">one</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/orm/">orm</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/powershell/">powershell</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/psake/">psake</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/scm/">scm</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sql/">sql</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unit-test/">unit test</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -1009,7 +996,7 @@ I starting wondering if it should be a feature at all.</p>
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/AAATest/" style="font-size: 12.5px;">AAATest</a> <a href="/tags/android/" style="font-size: 10px;">android</a> <a href="/tags/app-harbor/" style="font-size: 10px;">app harbor</a> <a href="/tags/architecture/" style="font-size: 15px;">architecture</a> <a href="/tags/build/" style="font-size: 20px;">build</a> <a href="/tags/c/" style="font-size: 15px;">c#</a> <a href="/tags/general/" style="font-size: 10px;">general</a> <a href="/tags/general-programming/" style="font-size: 10px;">general programming</a> <a href="/tags/integration-test/" style="font-size: 10px;">integration test</a> <a href="/tags/msbuild/" style="font-size: 15px;">msbuild</a> <a href="/tags/nServiceBus/" style="font-size: 10px;">nServiceBus</a> <a href="/tags/nant/" style="font-size: 12.5px;">nant</a> <a href="/tags/nunit/" style="font-size: 10px;">nunit</a> <a href="/tags/orm/" style="font-size: 15px;">orm</a> <a href="/tags/powershell/" style="font-size: 12.5px;">powershell</a> <a href="/tags/psake/" style="font-size: 10px;">psake</a> <a href="/tags/scm/" style="font-size: 10px;">scm</a> <a href="/tags/sql/" style="font-size: 17.5px;">sql</a> <a href="/tags/unit-test/" style="font-size: 15px;">unit test</a> <a href="/tags/vim/" style="font-size: 12.5px;">vim</a>
+      <a href="/tags/AAATest/" style="font-size: 12.5px;">AAATest</a> <a href="/tags/android/" style="font-size: 10px;">android</a> <a href="/tags/app-harbor/" style="font-size: 10px;">app harbor</a> <a href="/tags/architecture/" style="font-size: 15px;">architecture</a> <a href="/tags/build/" style="font-size: 20px;">build</a> <a href="/tags/c/" style="font-size: 17.5px;">c#</a> <a href="/tags/general/" style="font-size: 10px;">general</a> <a href="/tags/general-programming/" style="font-size: 10px;">general programming</a> <a href="/tags/integration-test/" style="font-size: 10px;">integration test</a> <a href="/tags/msbuild/" style="font-size: 15px;">msbuild</a> <a href="/tags/nServiceBus/" style="font-size: 10px;">nServiceBus</a> <a href="/tags/nant/" style="font-size: 12.5px;">nant</a> <a href="/tags/nunit/" style="font-size: 10px;">nunit</a> <a href="/tags/one/" style="font-size: 10px;">one</a> <a href="/tags/orm/" style="font-size: 15px;">orm</a> <a href="/tags/powershell/" style="font-size: 12.5px;">powershell</a> <a href="/tags/psake/" style="font-size: 10px;">psake</a> <a href="/tags/scm/" style="font-size: 10px;">scm</a> <a href="/tags/sql/" style="font-size: 17.5px;">sql</a> <a href="/tags/unit-test/" style="font-size: 15px;">unit test</a> <a href="/tags/vim/" style="font-size: 12.5px;">vim</a>
     </div>
   </div>
 
@@ -1018,7 +1005,7 @@ I starting wondering if it should be a feature at all.</p>
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">August 2015</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/07/">July 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/03/">March 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/09/">September 2014</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/08/">August 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/12/">December 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/09/">September 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/03/">March 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/01/">January 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/08/">August 2011</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/06/">June 2011</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/04/">April 2011</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/07/">July 2016</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">August 2015</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/07/">July 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/03/">March 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/09/">September 2014</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/08/">August 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/12/">December 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/09/">September 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/03/">March 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/01/">January 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/08/">August 2011</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/06/">June 2011</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/04/">April 2011</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -1028,6 +1015,10 @@ I starting wondering if it should be a feature at all.</p>
     <h3 class="widget-title">Recents</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2016/07/27/2016_07_27_Creating-a-Windows-Service/">Creating a Windows Service</a>
+          </li>
         
           <li>
             <a href="/2016/04/15/2016_04_15_Background-Builds-with-Vim-8/">Background Builds with Vim 8</a>
@@ -1043,10 +1034,6 @@ I starting wondering if it should be a feature at all.</p>
         
           <li>
             <a href="/2015/07/09/2015_07_09-Interfaces-for-Data/">Simple Interfaces for Data</a>
-          </li>
-        
-          <li>
-            <a href="/2015/07/03/2015_07_03-Vim-errorformat-Demystified/">Vim errorformat Demystified</a>
           </li>
         
       </ul>
