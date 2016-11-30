@@ -61,6 +61,51 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-2013_01_25_How-to-turn-away-paying-customers" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2013/01/25/2013_01_25_How-to-turn-away-paying-customers/" class="article-date">
+  <time datetime="2013-01-24T13:00:00.000Z" itemprop="datePublished">2013-01-25</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2013/01/25/2013_01_25_How-to-turn-away-paying-customers/">How to turn away paying customers</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>I have a couple of recent examples of companies being unwilling to take my money.</p>
+<p>The first is Amazon. I was working on an app and thought amazon S3 would be perfect for blob storage. After going through the most annoying, buggy sign up experience possible I was informed that Amazon, the worlds largest online retailer, is unable to process a card with a CCV.</p>
+<p>The solution: Rackspace Cloudfiles. Which was actually closer to what I was looking for anyway.</p>
+<p>The next one was nDepend. I&#39;ve wanted this for a while and used the trial at a number of places. I finally decided to cough up and buy a legit copy. The only thing standing in my way is there reluctance to accept gmail accounts. Sorry guys, web mail is ubiquitous and you better get used to it, until then I&#39;ll just go without.</p>
+<p>Update: As you might have seen in the comments, nDepend has some very pro active support and have enabled purchases with gmail addresses. So, I&#39;m now a proud owner. Fortunately the current project only has one major issue but there are some others where I know nDepend will help out a lot.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2013/01/25/2013_01_25_How-to-turn-away-paying-customers/" data-id="ciw4s35no000m6kuy7mtrasck" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2013/01/25/2013_01_25_How-to-turn-away-paying-customers/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/general/">general</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
     <article id="post-2011_08_04_Code-Coverage--Unit-vs-Integration-tests" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
     <a href="/2011/08/04/2011_08_04_Code-Coverage--Unit-vs-Integration-tests/" class="article-date">
@@ -94,12 +139,93 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2011/08/04/2011_08_04_Code-Coverage--Unit-vs-Integration-tests/" data-id="cir4v5ey1000pekuy9pm4wb95" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2011/08/04/2011_08_04_Code-Coverage--Unit-vs-Integration-tests/" data-id="ciw4s35nl000l6kuyjua91ph7" class="article-share-link">Share</a>
       
         <a href="http://flukus.github.io/2011/08/04/2011_08_04_Code-Coverage--Unit-vs-Integration-tests/#disqus_thread" class="article-comment-link">Comments</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/integration-test/">integration test</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/unit-test/">unit test</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-2011_06_10_Practical-MSBuild---Avoiding Spaghetti-Builds" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2011/06/10/2011_06_10_Practical-MSBuild---Avoiding Spaghetti-Builds/" class="article-date">
+  <time datetime="2011-06-09T14:00:00.000Z" itemprop="datePublished">2011-06-10</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2011/06/10/2011_06_10_Practical-MSBuild---Avoiding Spaghetti-Builds/">Practical MSBuild - Avoiding Spaghetti Builds</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>A spaghetti build, much like spaghetti code, is a hair pulling experience. Most developers (but not nearly enough) know how to avoid spaghetti code, refactoring, extracting classes and methods from tight loops, removing unexpected consequences. Quit frequently however, these same principles don&#39;t get applied to our build scripts. Here I want to show an example of a spaghetti build and then some techniques on how to avoid them.</p>
+<p>Here I put together an example of what I would consider a spaghetti build, regrettably some of this comes straight from the MS Build documentation:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Project</span> <span class="attr">DefaultTargets</span>=<span class="string">"localBuild"</span> <span class="attr">xmlns</span>=<span class="string">"http://schemas.microsoft.com/developer/msbuild/2003"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Choose</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">When</span> <span class="attr">Condition</span>=<span class="string">" '$(Configuration)'=='Server' "</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">PropertyGroup</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">databaseConnection</span>&gt;</span> Data Source=staging;Initial Catalog=myDataBase;Integrated Security=SSPI;<span class="tag">&lt;/<span class="name">databaseConnection</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">nunitPath</span>&gt;</span>c:\nunit<span class="tag">&lt;/<span class="name">nunitPath</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">projectVersion</span>&gt;</span>1.1.0.0<span class="tag">&lt;/<span class="name">projectVersion</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">runIntegrationTests</span>&gt;</span>True<span class="tag">&lt;/<span class="name">runIntegrationTests</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">PropertyGroup</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">When</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">When</span> <span class="attr">Condition</span>=<span class="string">" '$(Configuration)'=='Local' "</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">PropertyGroup</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">databaseConnection</span>&gt;</span>Data Source=localhost;Initial Catalog=myDataBase;Integrated Security=SSPI;<span class="tag">&lt;/<span class="name">databaseConnection</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">nunitPath</span>&gt;</span>c:\nunit<span class="tag">&lt;/<span class="name">nunitPath</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">projectVersion</span>&gt;</span>1.1.0.0<span class="tag">&lt;/<span class="name">projectVersion</span>&gt;</span><span class="tag">&lt;<span class="name">br</span> /&gt;</span>        <span class="tag">&lt;<span class="name">runIntegrationTests</span>&gt;</span>False<span class="tag">&lt;/<span class="name">runIntegrationTests</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">PropertyGroup</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">When</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">Choose</span>&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"serverBuild"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"init"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"compile"</span>  /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"migrateDb"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"test"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"package"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"deploy"</span> /&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"localBuild"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"init"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"compile"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"migrateDb"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"test"</span> /&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;/<span class="name">Project</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>#Anti-pattern: One Build to rule them all</p>
+<p>At first glance a build like this might look like a good idea. The entirety of the build process has been simplified down to two targets and all configuration is handled by a single property and life seems pretty simple. The trade off however is flexibility, the above approach has in essence created the &quot;one build to rule the all&quot;, it is an anti pattern that can result in individual tasks being unable to run in isolation.</p>
+<p>Another problem is that it violates the repeatability principle. It is impossible to run a &quot;server&quot; build without being logged in to the server or by checking in code changes. A solid build system should instead be repeatable anywhere, no special rules should exist for a CI build. I addressed how to handle properties in my post on <a href="http://proactivelylazy.blogspot.com/2011/04/practical-ms-build-flexible.html" target="_blank" rel="external">flexible configuration</a>.</p>
+<p>#Tasks should declare dependencies.</p>
+<p>In the above example tasks didn&#39;t declare their dependencies because the meta tasks (clientBuild, serverBuild) called them in an explicit order. A cleaner and more flexible approach is to have each task declare it&#39;s dependencies and let MS Build work out which order to run them in. The testUnit task for example will depend on the code having been compiled first, so it should be declared like this:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"testIntegration"</span> <span class="attr">DependsOnTargets</span>=<span class="string">"compile"</span> &gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Message</span> <span class="attr">Text</span>=<span class="string">"testIntegration"</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>The testIntegration tasks also needs an up to date database to run so will depend on the migrate task as well:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"testIntegration"</span> <span class="attr">DependsOnTargets</span>=<span class="string">"compile;dbMigrate"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Message</span> <span class="attr">Text</span>=<span class="string">"testIntegration"</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>A general rule of thumb is that if a task depends on the output of another task then that dependency should be explicitly declared.</p>
+<p>#Users should declare targets</p>
+<p>The package task is an example of where the reverse is true. Before packaging the unit test and integration tests need to pass, it would seem natural to make these dependencies. Package however doesn&#39;t depend on the output of testUnit or testIntegration so it should be left up to the user to declare this dependency instead:</p>
+<pre><code>msbuild build.proj /target:testUnit;testIntegration;package
+</code></pre><p>This way the build still fails if the tests fail but someone can be working on the installer without worrying about long build times.</p>
+<p>Another common example is code versioning, generating an AssemblyInfo class with the appropriate info. Here is a hypothetical version task to do this:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"version"</span> &gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">AssemblyInfoGen</span> <span class="attr">Version</span>=<span class="string">"$(version)"</span> <span class="attr">Output</span>=<span class="string">"build\src\AssemblyInfo.cs"</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>It would be tempting to have the compile task dependant on this, but this would trigger a full recompile every time (MS Build will only recompile if the files have changed). Release builds are usually the only one that cares about correct version so it doesn&#39;t make sense to slow down every build for one, relatively rare occurrence. The compile task will use the output from the version task but does not depend on it, It simply doesn&#39;t care one way or the other.</p>
+<p>Anyone that does cares about the correct AssemblyInfo being generated should should make this explicit:</p>
+<pre><code>msbuild build.proj /target:version;compile
+</code></pre><p>When users declare their targets it keeps the dependency chain simple, shallow and, above all, understandable. Once again I want to stress that the CI server should be considered as just another user, no more or less important than the developers.</p>
+<p>MS Build come equipped with a call target task which should be avoided whenever possible. Many times I&#39;ve seen people try to refactor build scripts to conditionally call other tasks. The above example had a &quot;Server&quot; build and a &quot;local&quot; build, other variations include &quot;trunk&quot; and &quot;stable&quot; as well as &quot;test&quot; and &quot;release&quot;.</p>
+<p>What they all have in common is that the violate the repeatability principle. And the points I outlined above give you all you need to avoid this antipattern.</p>
+<p>Another quite common example is having test task that executes an integration and unit test task (to save keystrokes:</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;Target Name="test" /&gt;</span><br><span class="line">  &lt;CallTarget Targets="testUnit;testIntegration" /&gt;&lt;</span><br><span class="line">&lt;/Target&gt;</span><br></pre></td></tr></table></figure>
+<p>A better alternative would be to declare them as dependencies:</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"test"</span> <span class="attr">DependsOnTargets</span>=<span class="string">"testUnit;testIntegration"</span> /&gt;</span></span><br></pre></td></tr></table></figure>
+<p>#Have many builds</p>
+<p>One way these meta tasks come about is when something needs to be repeated more than once. A &quot;stable&quot; build for example might produce a 32 and a 64 bit version that would be a waste of time if every developer had to repeat for every check in. A far easier solution to this is to enlist he CI server rather than the build system. A typical project might contain the following CI configurations:</p>
+<ul>
+<li>UltraProduct Trunk</li>
+<li>UltraProduct Test</li>
+<li>UltraProduct 1.2 32 bit</li>
+<li>UltraProduct 1.2 64 bit</li>
+<li>UltraProduct 1.4 32 bit</li>
+<li>UltraProduct 1.4 64 bit</li>
+</ul>
+<p>The details will differ wildly depending on your project. Some only need a stable and development version while others will need to maintain several stable versions and a few development branches simultaneously. Scrum developers might decide on a build for each sprint so as not to have people checking in half implemented features.</p>
+<p>Remember, not all builds have to run every check in, a test build might only need to happen when the testers are ready for a new version, a release build can generally happen overnight and a trunk build doesn&#39;t need to pass all integration tests. Each build configuration will have different needs and should be unaffected by other configurations.</p>
+<p>These are a few simple rules I&#39;ve come up with from real world situations, developing builds scripts and working with others. If you have suggestions for more I&#39;d like to hear them.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://flukus.github.io/2011/06/10/2011_06_10_Practical-MSBuild---Avoiding Spaghetti-Builds/" data-id="ciw4s35ns000o6kuyjpsvxupx" class="article-share-link">Share</a>
+      
+        <a href="http://flukus.github.io/2011/06/10/2011_06_10_Practical-MSBuild---Avoiding Spaghetti-Builds/#disqus_thread" class="article-comment-link">Comments</a>
+      
+      
+  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/build/">build</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/msbuild/">msbuild</a></li></ul>
 
     </footer>
   </div>
@@ -184,93 +310,12 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2011/06/10/2011_05_17_Practical-MSBuild---Database-Migrations/" data-id="cir4v5ey1000lekuyigq2qhb1" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2011/06/10/2011_05_17_Practical-MSBuild---Database-Migrations/" data-id="ciw4s35o2000q6kuy05h43e2a" class="article-share-link">Share</a>
       
         <a href="http://flukus.github.io/2011/06/10/2011_05_17_Practical-MSBuild---Database-Migrations/#disqus_thread" class="article-comment-link">Comments</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/build/">build</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/msbuild/">msbuild</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/sql/">sql</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-  
-    <article id="post-2011_06_10_Practical-MSBuild---Avoiding Spaghetti-Builds" class="article article-type-post" itemscope itemprop="blogPost">
-  <div class="article-meta">
-    <a href="/2011/06/10/2011_06_10_Practical-MSBuild---Avoiding Spaghetti-Builds/" class="article-date">
-  <time datetime="2011-06-09T14:00:00.000Z" itemprop="datePublished">2011-06-10</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2011/06/10/2011_06_10_Practical-MSBuild---Avoiding Spaghetti-Builds/">Practical MSBuild - Avoiding Spaghetti Builds</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-        <p>A spaghetti build, much like spaghetti code, is a hair pulling experience. Most developers (but not nearly enough) know how to avoid spaghetti code, refactoring, extracting classes and methods from tight loops, removing unexpected consequences. Quit frequently however, these same principles don&#39;t get applied to our build scripts. Here I want to show an example of a spaghetti build and then some techniques on how to avoid them.</p>
-<p>Here I put together an example of what I would consider a spaghetti build, regrettably some of this comes straight from the MS Build documentation:</p>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Project</span> <span class="attr">DefaultTargets</span>=<span class="string">"localBuild"</span> <span class="attr">xmlns</span>=<span class="string">"http://schemas.microsoft.com/developer/msbuild/2003"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Choose</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">When</span> <span class="attr">Condition</span>=<span class="string">" '$(Configuration)'=='Server' "</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">PropertyGroup</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">databaseConnection</span>&gt;</span> Data Source=staging;Initial Catalog=myDataBase;Integrated Security=SSPI;<span class="tag">&lt;/<span class="name">databaseConnection</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">nunitPath</span>&gt;</span>c:\nunit<span class="tag">&lt;/<span class="name">nunitPath</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">projectVersion</span>&gt;</span>1.1.0.0<span class="tag">&lt;/<span class="name">projectVersion</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">runIntegrationTests</span>&gt;</span>True<span class="tag">&lt;/<span class="name">runIntegrationTests</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">PropertyGroup</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">When</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">When</span> <span class="attr">Condition</span>=<span class="string">" '$(Configuration)'=='Local' "</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;<span class="name">PropertyGroup</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">databaseConnection</span>&gt;</span>Data Source=localhost;Initial Catalog=myDataBase;Integrated Security=SSPI;<span class="tag">&lt;/<span class="name">databaseConnection</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">nunitPath</span>&gt;</span>c:\nunit<span class="tag">&lt;/<span class="name">nunitPath</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">projectVersion</span>&gt;</span>1.1.0.0<span class="tag">&lt;/<span class="name">projectVersion</span>&gt;</span><span class="tag">&lt;<span class="name">br</span> /&gt;</span>        <span class="tag">&lt;<span class="name">runIntegrationTests</span>&gt;</span>False<span class="tag">&lt;/<span class="name">runIntegrationTests</span>&gt;</span></span><br><span class="line">      <span class="tag">&lt;/<span class="name">PropertyGroup</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">When</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">Choose</span>&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"serverBuild"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"init"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"compile"</span>  /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"migrateDb"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"test"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"package"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"deploy"</span> /&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br><span class="line"></span><br><span class="line">  <span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"localBuild"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"init"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"compile"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"migrateDb"</span> /&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">CallTarget</span> <span class="attr">Targets</span>=<span class="string">"test"</span> /&gt;</span></span><br><span class="line">  <span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;/<span class="name">Project</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>#Anti-pattern: One Build to rule them all</p>
-<p>At first glance a build like this might look like a good idea. The entirety of the build process has been simplified down to two targets and all configuration is handled by a single property and life seems pretty simple. The trade off however is flexibility, the above approach has in essence created the &quot;one build to rule the all&quot;, it is an anti pattern that can result in individual tasks being unable to run in isolation.</p>
-<p>Another problem is that it violates the repeatability principle. It is impossible to run a &quot;server&quot; build without being logged in to the server or by checking in code changes. A solid build system should instead be repeatable anywhere, no special rules should exist for a CI build. I addressed how to handle properties in my post on <a href="http://proactivelylazy.blogspot.com/2011/04/practical-ms-build-flexible.html" target="_blank" rel="external">flexible configuration</a>.</p>
-<p>#Tasks should declare dependencies.</p>
-<p>In the above example tasks didn&#39;t declare their dependencies because the meta tasks (clientBuild, serverBuild) called them in an explicit order. A cleaner and more flexible approach is to have each task declare it&#39;s dependencies and let MS Build work out which order to run them in. The testUnit task for example will depend on the code having been compiled first, so it should be declared like this:</p>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"testIntegration"</span> <span class="attr">DependsOnTargets</span>=<span class="string">"compile"</span> &gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Message</span> <span class="attr">Text</span>=<span class="string">"testIntegration"</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>The testIntegration tasks also needs an up to date database to run so will depend on the migrate task as well:</p>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"testIntegration"</span> <span class="attr">DependsOnTargets</span>=<span class="string">"compile;dbMigrate"</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">Message</span> <span class="attr">Text</span>=<span class="string">"testIntegration"</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>A general rule of thumb is that if a task depends on the output of another task then that dependency should be explicitly declared.</p>
-<p>#Users should declare targets</p>
-<p>The package task is an example of where the reverse is true. Before packaging the unit test and integration tests need to pass, it would seem natural to make these dependencies. Package however doesn&#39;t depend on the output of testUnit or testIntegration so it should be left up to the user to declare this dependency instead:</p>
-<pre><code>msbuild build.proj /target:testUnit;testIntegration;package
-</code></pre><p>This way the build still fails if the tests fail but someone can be working on the installer without worrying about long build times.</p>
-<p>Another common example is code versioning, generating an AssemblyInfo class with the appropriate info. Here is a hypothetical version task to do this:</p>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"version"</span> &gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">AssemblyInfoGen</span> <span class="attr">Version</span>=<span class="string">"$(version)"</span> <span class="attr">Output</span>=<span class="string">"build\src\AssemblyInfo.cs"</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">Target</span>&gt;</span></span><br></pre></td></tr></table></figure>
-<p>It would be tempting to have the compile task dependant on this, but this would trigger a full recompile every time (MS Build will only recompile if the files have changed). Release builds are usually the only one that cares about correct version so it doesn&#39;t make sense to slow down every build for one, relatively rare occurrence. The compile task will use the output from the version task but does not depend on it, It simply doesn&#39;t care one way or the other.</p>
-<p>Anyone that does cares about the correct AssemblyInfo being generated should should make this explicit:</p>
-<pre><code>msbuild build.proj /target:version;compile
-</code></pre><p>When users declare their targets it keeps the dependency chain simple, shallow and, above all, understandable. Once again I want to stress that the CI server should be considered as just another user, no more or less important than the developers.</p>
-<p>MS Build come equipped with a call target task which should be avoided whenever possible. Many times I&#39;ve seen people try to refactor build scripts to conditionally call other tasks. The above example had a &quot;Server&quot; build and a &quot;local&quot; build, other variations include &quot;trunk&quot; and &quot;stable&quot; as well as &quot;test&quot; and &quot;release&quot;.</p>
-<p>What they all have in common is that the violate the repeatability principle. And the points I outlined above give you all you need to avoid this antipattern.</p>
-<p>Another quite common example is having test task that executes an integration and unit test task (to save keystrokes:</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;Target Name="test" /&gt;</span><br><span class="line">  &lt;CallTarget Targets="testUnit;testIntegration" /&gt;&lt;</span><br><span class="line">&lt;/Target&gt;</span><br></pre></td></tr></table></figure>
-<p>A better alternative would be to declare them as dependencies:</p>
-<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">Target</span> <span class="attr">Name</span>=<span class="string">"test"</span> <span class="attr">DependsOnTargets</span>=<span class="string">"testUnit;testIntegration"</span> /&gt;</span></span><br></pre></td></tr></table></figure>
-<p>#Have many builds</p>
-<p>One way these meta tasks come about is when something needs to be repeated more than once. A &quot;stable&quot; build for example might produce a 32 and a 64 bit version that would be a waste of time if every developer had to repeat for every check in. A far easier solution to this is to enlist he CI server rather than the build system. A typical project might contain the following CI configurations:</p>
-<ul>
-<li>UltraProduct Trunk</li>
-<li>UltraProduct Test</li>
-<li>UltraProduct 1.2 32 bit</li>
-<li>UltraProduct 1.2 64 bit</li>
-<li>UltraProduct 1.4 32 bit</li>
-<li>UltraProduct 1.4 64 bit</li>
-</ul>
-<p>The details will differ wildly depending on your project. Some only need a stable and development version while others will need to maintain several stable versions and a few development branches simultaneously. Scrum developers might decide on a build for each sprint so as not to have people checking in half implemented features.</p>
-<p>Remember, not all builds have to run every check in, a test build might only need to happen when the testers are ready for a new version, a release build can generally happen overnight and a trunk build doesn&#39;t need to pass all integration tests. Each build configuration will have different needs and should be unaffected by other configurations.</p>
-<p>These are a few simple rules I&#39;ve come up with from real world situations, developing builds scripts and working with others. If you have suggestions for more I&#39;d like to hear them.</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2011/06/10/2011_06_10_Practical-MSBuild---Avoiding Spaghetti-Builds/" data-id="cir4v5ey1000nekuy0sq4o1vg" class="article-share-link">Share</a>
-      
-        <a href="http://flukus.github.io/2011/06/10/2011_06_10_Practical-MSBuild---Avoiding Spaghetti-Builds/#disqus_thread" class="article-comment-link">Comments</a>
-      
-      
-  <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/build/">build</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/msbuild/">msbuild</a></li></ul>
 
     </footer>
   </div>
@@ -327,7 +372,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://flukus.github.io/2011/04/22/2011_04_22_Practical-MSBuild---Felxible-Configuration/" data-id="cir4v5ey1000hekuysrr2gov3" class="article-share-link">Share</a>
+      <a data-url="http://flukus.github.io/2011/04/22/2011_04_22_Practical-MSBuild---Felxible-Configuration/" data-id="ciw4s35nf000i6kuylh48jhm9" class="article-share-link">Share</a>
       
         <a href="http://flukus.github.io/2011/04/22/2011_04_22_Practical-MSBuild---Felxible-Configuration/#disqus_thread" class="article-comment-link">Comments</a>
       
@@ -356,7 +401,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AAATest/">AAATest</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/android/">android</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/app-harbor/">app harbor</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/architecture/">architecture</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/build/">build</a><span class="tag-list-count">8</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/c/">c#</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general/">general</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general-programming/">general programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/integration-test/">integration test</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/msbuild/">msbuild</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nServiceBus/">nServiceBus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nant/">nant</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nunit/">nunit</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/one/">one</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/orm/">orm</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/powershell/">powershell</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/psake/">psake</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/scm/">scm</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sql/">sql</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unit-test/">unit test</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">2</span></li></ul>
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AAATest/">AAATest</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/android/">android</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/app-harbor/">app harbor</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/architecture/">architecture</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/build/">build</a><span class="tag-list-count">9</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/c/">c#</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general/">general</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/general-programming/">general programming</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/integration-test/">integration test</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/make/">make</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/msbuild/">msbuild</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nServiceBus/">nServiceBus</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nant/">nant</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/nunit/">nunit</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/one/">one</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/orm/">orm</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/powershell/">powershell</a><span class="tag-list-count">2</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/psake/">psake</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/scm/">scm</a><span class="tag-list-count">1</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/sql/">sql</a><span class="tag-list-count">4</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/unit-test/">unit test</a><span class="tag-list-count">3</span></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/vim/">vim</a><span class="tag-list-count">2</span></li></ul>
     </div>
   </div>
 
@@ -365,7 +410,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/AAATest/" style="font-size: 12.5px;">AAATest</a> <a href="/tags/android/" style="font-size: 10px;">android</a> <a href="/tags/app-harbor/" style="font-size: 10px;">app harbor</a> <a href="/tags/architecture/" style="font-size: 15px;">architecture</a> <a href="/tags/build/" style="font-size: 20px;">build</a> <a href="/tags/c/" style="font-size: 17.5px;">c#</a> <a href="/tags/general/" style="font-size: 10px;">general</a> <a href="/tags/general-programming/" style="font-size: 10px;">general programming</a> <a href="/tags/integration-test/" style="font-size: 10px;">integration test</a> <a href="/tags/msbuild/" style="font-size: 15px;">msbuild</a> <a href="/tags/nServiceBus/" style="font-size: 10px;">nServiceBus</a> <a href="/tags/nant/" style="font-size: 12.5px;">nant</a> <a href="/tags/nunit/" style="font-size: 10px;">nunit</a> <a href="/tags/one/" style="font-size: 10px;">one</a> <a href="/tags/orm/" style="font-size: 15px;">orm</a> <a href="/tags/powershell/" style="font-size: 12.5px;">powershell</a> <a href="/tags/psake/" style="font-size: 10px;">psake</a> <a href="/tags/scm/" style="font-size: 10px;">scm</a> <a href="/tags/sql/" style="font-size: 17.5px;">sql</a> <a href="/tags/unit-test/" style="font-size: 15px;">unit test</a> <a href="/tags/vim/" style="font-size: 12.5px;">vim</a>
+      <a href="/tags/AAATest/" style="font-size: 12.5px;">AAATest</a> <a href="/tags/android/" style="font-size: 10px;">android</a> <a href="/tags/app-harbor/" style="font-size: 10px;">app harbor</a> <a href="/tags/architecture/" style="font-size: 15px;">architecture</a> <a href="/tags/build/" style="font-size: 20px;">build</a> <a href="/tags/c/" style="font-size: 17.5px;">c#</a> <a href="/tags/general/" style="font-size: 10px;">general</a> <a href="/tags/general-programming/" style="font-size: 10px;">general programming</a> <a href="/tags/integration-test/" style="font-size: 10px;">integration test</a> <a href="/tags/make/" style="font-size: 10px;">make</a> <a href="/tags/msbuild/" style="font-size: 15px;">msbuild</a> <a href="/tags/nServiceBus/" style="font-size: 10px;">nServiceBus</a> <a href="/tags/nant/" style="font-size: 12.5px;">nant</a> <a href="/tags/nunit/" style="font-size: 10px;">nunit</a> <a href="/tags/one/" style="font-size: 10px;">one</a> <a href="/tags/orm/" style="font-size: 15px;">orm</a> <a href="/tags/powershell/" style="font-size: 12.5px;">powershell</a> <a href="/tags/psake/" style="font-size: 10px;">psake</a> <a href="/tags/scm/" style="font-size: 10px;">scm</a> <a href="/tags/sql/" style="font-size: 17.5px;">sql</a> <a href="/tags/unit-test/" style="font-size: 15px;">unit test</a> <a href="/tags/vim/" style="font-size: 12.5px;">vim</a>
     </div>
   </div>
 
@@ -374,7 +419,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/07/">July 2016</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">August 2015</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/07/">July 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/03/">March 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/09/">September 2014</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/08/">August 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/12/">December 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/09/">September 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/03/">March 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/01/">January 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/08/">August 2011</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/06/">June 2011</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/04/">April 2011</a><span class="archive-list-count">1</span></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/11/">November 2016</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/07/">July 2016</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/08/">August 2015</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/07/">July 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2015/03/">March 2015</a><span class="archive-list-count">3</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/09/">September 2014</a><span class="archive-list-count">4</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2014/08/">August 2014</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/12/">December 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/09/">September 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/03/">March 2013</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2013/01/">January 2013</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/08/">August 2011</a><span class="archive-list-count">1</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/06/">June 2011</a><span class="archive-list-count">2</span></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2011/04/">April 2011</a><span class="archive-list-count">1</span></li></ul>
     </div>
   </div>
 
@@ -384,6 +429,10 @@
     <h3 class="widget-title">Recents</h3>
     <div class="widget">
       <ul>
+        
+          <li>
+            <a href="/2016/11/30/2016_11_30_Rediscovering-Make/">Rediscovering Make</a>
+          </li>
         
           <li>
             <a href="/2016/07/27/2016_07_27_Creating-a-Windows-Service/">Creating a Windows Service</a>
@@ -399,10 +448,6 @@
         
           <li>
             <a href="/2015/07/24/2015_07_24_Simple-Abstractions/">Simple Abstractions</a>
-          </li>
-        
-          <li>
-            <a href="/2015/07/09/2015_07_09-Interfaces-for-Data/">Simple Interfaces for Data</a>
           </li>
         
       </ul>
