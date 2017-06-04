@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Building a Blog Engine</title>
+</head>
+<body>
+<header>
+	<h1>Building a Blog Engine</h1>
+</header>
+<main>
+<p>let's start off with a brief history of the blog. I started it back in the blogging heyday of 2011 on blogger, this version is still up and available <a href="http://proactivelylazy.blogspot.com.au/">here</a>. Blogger was always a poor platform though, editing documents in a web browser has never been a nice experience, I hate using google docs and the blogger editor is a lot worse. Of particular annoyance for this blog was the laborious process of entering code. Fortunately a few years later something very unexpected happened, static sites became cool again.</p>
+<p>By 2014 github was established and the world was used to using git for code and markdown for documentation. By then stack-overflow was also the goto site for for all programming questions by then and was also a big user of markdown. It was around this time the a lot of markdown based static site generators sprung up, the most notable of these was <a href="https://help.github.com/articles/using-jekyll-as-a-static-site-generator-with-github-pages/">jekyll</a>. For reasons I can't remember, this blog was built with <a href="https://hexo.io/">hexo</a>.</p>
+<p>Hexo was initially big step up from blogger, being to write blog posts with vim in a simple markdown format was much simpler. Over time the cracks started to show though. Every time I checked out the project to a new computer something would break, sometimes something small like the date format and sometimes something big, something that would essentially force me to create a new project and copy the relevant files over. I think most of this was due to the instability of the nodejs ecosystem.</p>
+<p>When I got another new machine in January and faced another breakage it was the final straw and I resolved to build my own blog engine. After 5 months of mostly procrastination I'd completed my own static site generator, this time from common and stable gnu/linux tools.</p>
+<h2 id="goals-for-the-new-generator">Goals for the new Generator</h2>
+<p>For the most part, I loved the process of creating blog entries in hexo, right from the start I decided that I'd keep markdown but with a few tweaks.</p>
+<p>The first tweak was that I wanted all the content to be in the root directory. Hexo and others love to shove files into a source/_posts subdirectory, I inverted this so that all the entries are in the root directory with everything else shoved into sub directories. This is a small thing, but I think it's telling of the the static site generators actually view your content.</p>
+<p>The next big change was that I wanted all the metadata to be centralized. Hexo puts all the metadata into what it calls <a href="https://hexo.io/docs/front-matter.html">front matter</a>, but I always found this annoying when I wanted to do things like find which tags other posts are using, I'd have to go through each potentially related file. Instead I wanted a central index to control things, the final form of which looks like this:</p>
+<pre><code>title: Rediscovering Make
+file: rediscovering-make.md
+description: A high level developer discovering there&#39;s some life left in the grandfather of build tools.
+tags: build make
+published: 20161130
+</code></pre>
+<p>From this file I can control the title, desciption tags and published status. There's nothing radical there, just some quality of life improvements that I can make now that I control the platform.</p>
+<h2 id="making-it-work">Making it work</h2>
+<p>After some experimenting with various tools and how they fit together, make became the obvious choice. There are some additional awk scripts to help tie things together, but make is the primary driver. The biggest benefit of this is that it creates a fast and fully incremental build. The entire blog regenerates in under a second and an incremental build is under 100ms, usually closer to 30ms. It's rather simple too the entire makefile is ~30 lines that I'll go through in more detail, but I'll post the entire file here:</p>
+<pre class="make"><code>.DEFAULT_GOAL=build
+
+MDS=$(shell awk -f tools/index.awk &lt; index.idx)
+ALL=$(patsubst %.md, build/publish/%.html, $(MDS))
+INDEX=build/publish/index.html
+
+init=build/
+.PHONY: build
+clean:
+    rm -f ./build/html/*.html
+    rm -f ./build/html/*.md
+    rm -f ./build/htmlfill/*.html
+    rm -f ./build/publish/*.html
+$(init):
+    mkdir build
+    mkdir build/html
+    mkdir build/htmlfull
+    mkdir build/publish
+init: $(init)
+$(INDEX): $(init) index.idx
+    awk -f tools/genindex.awk &lt; index.idx &gt; build/html/index.md
+    pandoc -o build/html/index.html build/html/index.md
+    cat tools/headerindex.html build/html/index.html tools/footer.html |\
+    sed /href=\&quot;\./s/\.md/\.html/ &gt; $(INDEX)
+build/html/%.html: %.md
+    pandoc -o $@ $^
+build/htmlfull/%.html: build/html/%.html
+    cat tools/header.html $^ tools/footer.html &gt; $@
+build/publish/%.html: build/htmlfull/%.html
+    awk -v file=$*.md -f tools/indexsub.awk &lt; index.idx | xargs -0 -I {} sed {} $^ &gt; $@
+build: init $(INDEX) $(ALL)</code></pre>
+<p>First we need to get a list of of files to generate. For this I created an awk script to read the file entries from the index then patsubst is used to create a list of files that are expected at the end:</p>
+<pre class="make"><code>MDS=$(shell awk -f tools/index.awk &lt; index.idx)
+ALL=$(patsubst %.md, build/publish/%.html, $(MDS))</code></pre>
+<p>ALL is the result that we expect at the end of the build, the html files that are part of the blog. This is used by the final build targets:</p>
+<pre class="make"><code>build/publish/%.html: build/htmlfull/%.html
+    awk -v file=$*.md -f tools/indexsub.awk &lt; index.idx | xargs -0 -I {} sed {} $^ &gt; $@
+build: init $(INDEX) $(ALL)</code></pre>
+<p>build is the task that I call, which depends on the list of files in ALL being present and up to date. Here is another awk script which again reads from the index file and produces a substitution pattern for sed. Of all the build steps this is the least efficient, but with sub second rebuild times it's not something I'm particularly concerned about. The most important part here is the wild card '%', it allows us to specify build instructions for many files at once.</p>
+<p>So from these targets make knows that build/publish/building-a-blog-engine.html is expected and that to create this file it needs build/htmlfull/building-a-blog-engine.html It will run the commands inside to generate this file and it will invoke the previous targets if they don't exist or aren't up to date. The two targets before that produce some intermediary files:</p>
+<pre class="make"><code>build/html/%.html: %.md
+    pandoc -o $@ $^
+build/htmlfull/%.html: build/html/%.html
+    cat tools/header.html $^ tools/footer.html &gt; $@</code></pre>
+<p>The first target will use pandoc to generate an html from each markdown file, the second will concatenate a generic header and footer. The rest is largely boiler plate and index page generation. I won't go too much into the awk scripts, just the most interesting one for the index:</p>
+<div class="sourceCode"><pre class="sourceCode awk"><code class="sourceCode awk"><span class="cf">BEGIN</span> <span class="kw">{</span>
+    <span class="bu">RS</span> <span class="op">=</span> <span class="st">&quot;&quot;</span>
+    <span class="bu">FS</span> <span class="op">=</span> <span class="st">&quot;: |</span><span class="sc">\n</span><span class="st">&quot;</span>
+<span class="kw">}</span>
+<span class="kw">{</span>
+    <span class="kw">for</span> (i <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> i <span class="op">&lt;</span> <span class="bu">NF</span><span class="op">;</span> i <span class="op">+=</span><span class="dv">2</span>)<span class="kw">{</span>
+            entry[<span class="dt">$i</span>] <span class="op">=</span> $(i<span class="op">+</span><span class="dv">1</span>)
+    <span class="kw">}</span>
+    <span class="kw">if</span> (<span class="st">&quot;published&quot;</span> <span class="kw">in</span> entry) <span class="kw">{</span>
+        <span class="kw">print</span> <span class="st">&quot;[&quot;</span> entry[<span class="st">&quot;title&quot;</span>] <span class="st">&quot;](&quot;</span> entry[<span class="st">&quot;file&quot;</span>] <span class="st">&quot;): &quot;</span> entry[<span class="st">&quot;description&quot;</span>] <span class="st">&quot;</span><span class="sc">\n\n</span><span class="st">&quot;</span>
+    <span class="kw">}</span>
+<span class="kw">}</span></code></pre></div>
+<p>The field separator is the most interesting thing here, it con be a colon or a new line and an empty line is used for the result separator. From there a dictionary is built for each result in the index and a markdown paragraph is printed out.</p>
+<h2 id="whats-left">What's Left</h2>
+<p>If you're looking at the blog around the time of this article being published then it's obviously very bare bones. The biggest features I intend to add soon are the ability to embed images and a mechanism to make us of the tabs.</p>
+<p>The styling is another matter. I have some plans in mind that I intend to reveal in a future blog post.</p>
+<p>Had I known it was this simple to build my own I would have done it long ago.</p>
+</main>
+</body>
+</html>

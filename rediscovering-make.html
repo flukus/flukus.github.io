@@ -11,7 +11,7 @@
 <p>I have a confession to make (pun intended), I never learned to use make. Those of you that do know make will probably be feeling the urge to start screaming about my presence on your lawn about now. I'll let you know now that this urge is going to get worse and that it's completely justifiable justifiable. It's not that linux/unix is alien to me, or the cli. I'm not exactly a master at either, but I've never been afraid of them and use them quite often.</p>
 <p>So how did I miss make? By the time I was a developer ant, nant, rake, etc were all in vogue and I made the mistake of thinking that gnu make was just one of those tools only c/c++ greybeards used. Lately all the attention been psake, fake, gradle and the million nodejs based tools designed to avoid the &quot;angle bracket tax&quot;. Surprisingly (to me at least) we've had such a tool for more than 30 years, and it's been getting reinvented (poorly) ever since.</p>
 <p>I think a big reason people (myself included) are put off might be the make tutorials, which seem to focus exclusively on c. Take a look at the official <a href="https://www.gnu.org/software/make/manual/make.html#Simple-Makefile">gnu make tutorial</a>, it focuses on managing object files, headers and all that stuff we don't care about when using higher level languages. For the most part, compiling in these languages (c#, java) is easy, our build scripts are more concerned about all the other little things, but make is just as good at these as it is compiling c code. So let's take a look at how we can use make.</p>
-<h1 id="make-101">Make 101</h1>
+<h2 id="make-101">Make 101</h2>
 <p>First of all, you need to install make. For linux users it's probably already installed, if it's not you can just apt-get/rpm/whatever install make. For windows users I'd recommend <a href="https://www.cygwin.com/">cygwin</a>. There is also bash for windows, but that doesn't inter operate with windows commands and I'm going to use some later on. Then we create our first makefile called (Makefile):</p>
 <pre class="make"><code>hello:
     echo hello
@@ -31,7 +31,7 @@ goodbye: hello
 <p>Here the touch command is being used to create files (or change there modified date if they exist). If you were to run hello now, it would create the file the first time but subsequent runs would do nothing because the output exists. The same will happen for the goodbye task. This is how make handles incremental builds, it will only rebuild what it needs to.</p>
 <p>Another subtle thing going on here is dependency tracking. Because hello is a dependency of goodbye, any change to this file will force goodbye to execute. To demonstrate this first run &quot;make goodbye&quot;, then run it again and see that it will not execute. After that, run the &quot;touch hello&quot; command manually, this will update the last modified date on the hello file. Finally, run &quot;make goodbye&quot; again, it will detect that it's output (goodbye) is older than it's input and execute.</p>
 <p>The next step is to see how it works with something more real world.</p>
-<h1 id="stage-1---setup">Stage 1 - Setup</h1>
+<h2 id="stage-1---setup">Stage 1 - Setup</h2>
 <p>So now we've covered the basics lets see how make handles a real world scenario. This isn't a complete project but it covers a few common tasks, hopefully enough to give you an idea of how simple and flexible make can be.</p>
 <p>The first step is to define some variables:</p>
 <pre class="make"><code>init = ./build/.init
@@ -67,7 +67,7 @@ init: $(init)</code></pre>
 <p>The first is the echo task, which dumps all our variables to screen. This is recommended for any build tool, it simplifies debugging considerably. If this gets unwieldy then there are some more elegant ways, but here they also demonstrate how variable substitution works. Next is clean, which blows away our build directory and starts from a clean slate. Then $(init) which restores nuget packages and creates the build directory. It will also create the ./build/.init file, so it won't run more than once.</p>
 <p>There is also a second init task which simplifies calling from the command line. The value of $(init) is a callable task. It can be invoked with &quot;make ./build/.init&quot;, but calling &quot;make init&quot; is much simpler.</p>
 <p>Remember, tasks are outputs, so &quot;make init&quot; will run unless there is a file called &quot;init&quot;, we aren't making one so it will be executed every time. $(init) on the other hand, is a file we create, so the task will only get executed if the file does not exist. In practice here, init will always be executed and it's dependency $(init) will only be executed once.</p>
-<h1 id="stage-2---compiling">Stage 2 - Compiling</h1>
+<h2 id="stage-2---compiling">Stage 2 - Compiling</h2>
 <p>The actual meat and potatoes of this build script is compiling the application. It looks a little complicated but is really very simple:</p>
 <pre class="make"><code>$(version): $(init)
     sed s&#39;/$${Version}/$(Version)/g&#39; src/Version.template.cs &gt; build/Version.cs
@@ -89,7 +89,7 @@ build: $(app) $(lib) $(migrate)</code></pre>
 <pre class="make"><code>migrate: $(migrate)
     packages/FluentMigrator.1.6.2/tools/Migrate.exe -c $(Db) -db sqlserver2008 -a $(migrate) </code></pre>
 <p>This will invoke fluent migrator with our migrations and bring the database up to date.</p>
-<h1 id="conclusion">Conclusion</h1>
+<h2 id="conclusion">Conclusion</h2>
 <p>So that's make, a deceptively simple yet flexible build tool. In terms of raw LOC, make requires a lot less than any other build tool I've used. Incremental builds are something you get for free, not something you have to work for. There is no API to learn, just standard unix commands.</p>
 <p>I wish I'd listened to the greybeards and learned make much earlier.</p>
 </main>
