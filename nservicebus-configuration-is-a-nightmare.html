@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>NServicebus Configuration is a Nightmare</title>
+</head>
+<body>
+<header>
+	<h1>NServicebus Configuration is a Nightmare</h1>
+</header>
+<main>
+<p>So I'm pulling my hair out at the moment trying to configure nServiceBus. I've spent a couple of days trying to get something working to no avail. The core issues seem to be the configuration and lack of documentation. My current trial and error approach is getting me nowhere.</p>
+<p>I don't think it's too much to ask that a trivial pub/sub queue should be able to be setup in minutes, even if it's all in memory. I just want to be able to get on developing the application itself and to come back update the configuration later to something more robust.</p>
+<p>The following rant may be completely wrong, but the documentation didn't exactly steer me in the right direction.</p>
+<h2 id="why-is-the-configuration-so-bad">Why is the configuration so bad?</h2>
+<p>The main reason is because there is no single way to configure nServiceBus. The configuration is handled four different ways, the web/app config file, the fluent configuration, the declarative configuration and the &quot;convention&quot;.</p>
+<p>The application config method seems to be the outdated way to configure nServiceBus. Except for all those times and exception is thrown because of a missing config section. This leads you to adding config sections without knowing what they actually are, just to shut up the exception. I know this is my fault for adding stuff without realizing what it is, but I'm sure I'm not the only person to have done it.</p>
+<p>I love the idea of fluent configuration, but the current implementation is lacking. Adding .MsmqTransport at application start up seems pretty simple right? But then you get random exceptions because of missing elements in the web.config. I think if your going to have a fluent API then it should be completely self contained, not half and half.</p>
+<p>The declarative configuration seems to only be if you are running the nServiceBus process host, but this wasn't entirely clear from the documentation. It basically involves creating a class with a marker interface and for this class to contain the configuration information. For my current project needs to be hosted in my own executable (to satisfy app harbor), but I'm not entirely sure if I need it or not.</p>
+<p>Conventions are also used throughout nServiceBus, but it's not always clear what those conventions are.</p>
+<h2 id="and-the-documentation">And the Documentation?</h2>
+<p>The documentation isn't bad and there is quite a bit of it but some more step by step tutorials would be good. There is absolutely no documentation on how to configure nServiceBus to use ravendb, which is quite frustrating, because that's what I'm trying to use.</p>
+<p>None of the documentation seems to tell you which version it was created with, so I never have any idea if what I'm reading is relevant or not.</p>
+<p>The latest version of the tutorials is also completely useless as it uses the WYSIWYG editor, which for some reason won't install in my version of visual studio. Not that I want to use it anyway, I prefer the code first approach, for which there is no up to date documentation.</p>
+<h2 id="what-id-like">What I'd like?</h2>
+<p>I would love an entirely self contained fluent configuration that made it clear what was happening, something like:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs">Configure.<span class="fu">AsPublisher</span>(x =&gt; { x.<span class="fu">Queue</span> = myRavenQueue })
+Configure.<span class="fu">AsSubscriber</span>(x=&gt; { x.<span class="fu">Queue</span> = myRavenQueue })</code></pre></div>
+<p>Making it clear what is happening is important, because the current configuration options absolute do not.</p>
+<p>For now I'm not sure what to do. Continue persevering? Hard to do when I have no idea if I'm getting closer or not. Look for alternatives? Maybe. Rhino service bus is nicer but I'm not sure of the future of the project. Avoid it all together? I don't particularly need a service bus right now, but less code, future scalability and built in fault tolerance are all pushing me towards one.</p>
+</main>
+</body>
+</html>

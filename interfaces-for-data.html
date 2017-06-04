@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Interfaces for Data</title>
+</head>
+<body>
+<header>
+	<h1>Interfaces for Data</h1>
+</header>
+<main>
+<p>Interfaces seem to be a feature that is both under used and over used. Typically they get over used for everything that will have unit tests and dependency injection. There are plenty of arguments against adding unnecessary interfaces like this, but that is not the case I'm trying to make today.</p>
+<p>Instead I want to show some uses for interfaces that have nothing to do with architecture, that will never see an IOC container or unit test but will still have an impact on readability maintainability and performance.</p>
+<h2 id="inamevaluepair">INameValuePair</h2>
+<p>Name value pairs are extremely common, just about every select list, radio box, check box, etc. relies on one, either explicitly or implicitly. Just today though, I came across some code that used reflection to get those values. Other times I've seen forced inheritance hierarchies for the same result. A much simpler alternative is to use an interface:</p>
+<pre class="c#"><code>public interface INameValuePair {
+  public int Id { get; }
+  public string Name { get; }
+}</code></pre>
+<p>This all there is to it, no need for reflection and attributes, just a simple interface. A couple of examples:</p>
+<pre class="c#"><code>public class Country : INameValuePair {
+  public int Id { get; set; }
+  public string Name { get; set; }
+}
+
+public class ProductCategory : INameValuePair, IBelongToTenant {
+  public int Id { get; set; }
+  public string CategoryName { get; set; }
+  public string INameValuePair.Name { get { return CategoryName; } }
+  pulic int TenantId { get; set; }
+}</code></pre>
+<p>Even this simple example demonstrates a few things. The first is that, while using inheritance would achieve he same result, it is a forced relationship. Just because a country and a product category have two properties in common, an Id and a name, doesn't mean they are related in any way.</p>
+<p>The ProductCategory also has two two interfaces. When you start creating interfaces like this a class will quite often fit into more than one. Trying to fit this into some sort of inheritance hierarchy will only make things more complicated and harder to adapt in future.</p>
+<p>The final benefit over inheritance is that the interface doesn't have to be a named match. If ProductCategory was inheriting from a base class, it would always have a name property. This means that the you've run into a situation where the view is forcing it's constraints up the stack, which is never a good situation to be in.</p>
+<p>With an explicitly defined interface we don't have to care about what the method is called, only that the interface is implemented.</p>
+<h2 id="ibelongtotenant">IBelongToTenant</h2>
+<p>Multi tenant applications are very common, and the implementation seeps into the data. Things have to belong to a tenant, otherwise the data is global. Another very simple interface:</p>
+<pre class="c#"><code>public interface IBelongToTenant {
+  public int TenantId { get; set; }
+}
+
+public class ProductCategory : IBelongToTenant {
+  public int Id { get; set; }
+  public string Name { get; set; }
+  pulic int TenantId { get; set; }
+}</code></pre>
+<p>Once this information encoded into the class through an interface some clever things can be done. Here is an extension method that will filter for the current tenant:</p>
+<pre class="c#"><code>public static class TenantExtensions {
+  public static IQueryable&lt;T&gt; FilterTenant&lt;T&gt;(this IQueryOver&lt;T&gt; query) where T : IBelongToTenant {
+    query = query.Where(x =&gt; x.TenantId == CurrentTenantId);
+    return query;
+  }
+}</code></pre>
+<p>Querying a list of ProductCategory would then look like:</p>
+<pre class="c#"><code>var pc = ISession.Query&lt;ProductCategory&gt;()
+            .FilterTenant()
+            .ToList();</code></pre>
+<p>It doesn't save a lot of code, but it does make it more clear. A common request I see is for some sort multi tiered tenanting, where the behavior has to match the corporate structure (don't ask me why, I just have to implement it). When the logic is encapsulated like this there is only one place to change for it to be globally applied.</p>
+<p>It also leaves a lot of room for automagic code. A global query filter could be applied to any query on an IBelongToTenant class for instance, the method would not need to be called at all.</p>
+<h2 id="itaggable">ITaggable</h2>
+<p>The final common item is a tagging system. A BlogPost and a BlogComment might have tags for instance, but again, this doesn't mean they should share a base class. Our logic can still be encapsulated though:</p>
+<pre class="c#"><code>
+public class Tag {
+  public int Id { get; set; }
+  public string Name { get; set; }
+}
+
+public interface ITaggable {
+  public List&lt;Tag&gt; Tags { get; }
+}
+
+public class BlogPost : ITaggable {
+  public int Id { get; set; }
+  public string Content { get; set; }
+  public List&lt;Tag&gt; Tags { get; set; }
+}</code></pre>
+<p>Similar to the IBelongToTenant extension method but more complex:</p>
+<pre class="c#"><code>public static class TaggableExtensions {
+  public static IQueryable&lt;T&gt; FilterTags&lt;T&gt;(this IQueryOver&lt;T&gt; query, IEnumerable&lt;string&gt; tags) where T : ITaggable {
+    foreach (var tag in tags)
+      query = query.Where(x =&gt; x.Tags.Contains(y =&gt; y.Name == tag));
+    return query;
+  }
+}</code></pre>
+<p>Again the code is more readable:</p>
+<pre class="c#"><code>var pc = ISession.Query&lt;ProductCategory&gt;()
+            .FilterTags(queryModel.Tags)
+            .ToList();</code></pre>
+<p>In this case there are some likely performance optimizations too, but optimizing the extension method will optimize all ITaggable queries.</p>
+<h2 id="nothing-amazing">Nothing Amazing</h2>
+<p>None of these examples are particularly fancy or noteworthy, just some simple ideas to make code readable and maintainable.</p>
+<p>Yet time and again I see much more complicated solutions to achieve the same results. Developers need to get over our habit trying to fit everything into a hierarchal model.</p>
+</main>
+</body>
+</html>

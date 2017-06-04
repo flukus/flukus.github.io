@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Your Checkin Process is Ruining Your Checkin Process</title>
+</head>
+<body>
+<header>
+	<h1>Your Checkin Process is Ruining Your Checkin Process</h1>
+</header>
+<main>
+<p>Like most people I like to take the easy road, the path of least resistance. Fortunately most of the tools we use on a daily basis cater for that and makes life as easy as possible. One of those tools is source control, every SCM, TFS aside, makes it a straightforward process to checkout, checkin, branch and merge your code.</p>
+<p>The requirements of an SCM (not the implimentation) are fairly modest. It has to keep track of our files, when, who and why they have changed. It has to keep a historical record of these changes for that inevitable day when someone ask &quot;WTF was this done for?&quot;. An SCM will take care of the who and when for the most part, we just have to supply the why.</p>
+<p>Unless your trying to assign blame the why is the most important part. It's a little message to future you or future college what the reasoning behind that particular change was. This is one of the most invaluable features of source control.</p>
+<p>Then the complicators get in, these guys are just like there architecture astronaut counterparts. The see a simple process and try to make it enterprisy. All of a sudden source control, instead of being the bedrock of the development process, becomes a management tool and prevents good practices instead of creating them.</p>
+<p>Here are some common ways too much process can wreck your development bedrock.</p>
+<h2 id="every-checkin-shall-hencforth-require-a-ticket---the-complicator">&quot;Every checkin shall hencforth require a ticket&quot; - The Complicator</h2>
+<p>This is probably the most common form of SCM abuse. Every checkin requires a reference to a task or a bug so that every change is recorded and justified. It sounds like a good idea at the start but it has some pretty serious downsides that aren't immediately apparent.</p>
+<p>Quite frequently we come across bugs and being the good developers we are, we like to fix things, we fix it while we're there. But then comes the paperwork, the mental overhead that we would rather not deal with. Should we create a bug for this single line fix? Should we role it into another checkin? Should we ignore it?</p>
+<p>Creating bug ticket for a single line fix we just happened to come across is just more trouble than it's worth, we are developers after all, not bureaucrats. The 10 minutes or more to create a ticket for a 5 second fix is woefully inefficient.</p>
+<p>Squeezing it in to another checkin is probably the most common result, but it undermines the value of source control and, ironically enough, the process that was put around it. The process that was meant to document the reason for the change suddenly has a random change with no apparent reason, which makes it pretty useless.</p>
+<p>This also leads to another problem, monolithic checkins. A monolithic checkin is either more than a days work in a single checkin or several unrelated changes in a single checkin. The bigger the checkin the less likely it is that all the changes have been documented correctly. And the bigger the checkin the harder merging will be. So in this case too much checkin has undermined the value of source control.</p>
+<h2 id="the-inevitable-result">The Inevitable Result</h2>
+<p>The final option left to the developer and probably the most common one is to ignore the problem in the first place. As I said, I follow the path of least resistance, and if your process requires more work than fixing a bug then we might just decide it's not worth while. Every body loses in this situation, the business has a worse product and the developers don't get to fix things. We like fixing things.</p>
+</main>
+</body>
+</html>

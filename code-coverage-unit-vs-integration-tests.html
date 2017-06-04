@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Code Coverage - Unit vs Integration tests</title>
+</head>
+<body>
+<header>
+	<h1>Code Coverage - Unit vs Integration tests</h1>
+</header>
+<main>
+<p>Quite often I see someone put forward an argument that Integration testing reaps superior code coverage than unit testing and here I want to explain why that simply isn't true. I won't go into detail on why one is better than the other, suffice to say that both techniques have value.</p>
+<p>The most convincing argue comes down to simple mathematics. Lets say we have a class structure A -&gt; B -&gt; C, A depends on B and B depends on C. Then lets say that there are 10 code paths through each class, this includes all possibilities of branching including exceptions (referred to below as n). Finally, we want to have 100% code coverage, a pointless but aspirational goal.</p>
+<p>If we're unit testing then each class is tested in isolation the total number of tests will be:</p>
+<pre><code>(A * n) + (B * n) + (C * n) = 30</code></pre>
+<p>If, instead we do integration testing and want to get 100% coverage we have to account for all the possible interactions between the classes, so the formula instead looks like this:</p>
+<pre><code>(A * b) * (B * b) * (C * b) = 1000</code></pre>
+<p>So even though one integration test might cover more than one unit test, to get the same level of coverage from integration testing would take much more work. Bear in mind that this is a trivial object graph, I real one could require millions/billions of tests.</p>
+</main>
+</body>
+</html>

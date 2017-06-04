@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Introducing AAATest</title>
+</head>
+<body>
+<header>
+	<h1>Introducing AAATest</h1>
+</header>
+<main>
+<p>I've had a bit of time on my hands lately and was determined to finish one of my projects, or at least make enough progress that I have something to show for it, something that can be improved upon later.</p>
+<p>The project I decided on was a unit test framework. I had started work on it several months ago but never got much past the exploratory phase. It was just an experiment to see how far I could push the boundaries of c# and the .net framework, to see how much could be done in a simpler and more expressive way.</p>
+<p>The framework is quickly approaching it's 0.1 BFW (barely works) milestone and unlike most of my projects I'm quite pleased with the direction. So I thought now would be a good time to start writing about it. Today will be about why it was created and future posts will go into more depth on some design decisions and experiences as I setup publishing for a new library.</p>
+<p>Warning: Some of the comments below might seem like a criticism of nUnit. My intention isn't to criticize it but to use it to contrast it with my own effort. I've happily used nUnit for the best part of a decade and will probably use it for many years in future.</p>
+<h1 id="unit-testing-evolution">Unit Testing Evolution</h1>
+<p>Test frameworks have barely evolved over the last decade. In that time .net community (and Microsoft itself) has changed quite dramatically. MVC has been embraced as the way to build web apps. Nuget and the countless OSS tools it provides have been embraced by the community. Continuous integration and deployment are no longer foreign words.</p>
+<p>But our test frameworks are largely the same. If I had to use a release of nUnit that is ten years old I doubt I would notice. This isn't because nUnit is bad, quite the opposite is true. It just hasn't changed because it works, and works wel, we've all just learned to accept the warts as just the way things are.</p>
+<p>The other part of the problem, I think, is that our test frameworks are general test frameworks. nUnit works well for pure unit testing and it works well for integration tests. Being versatile is a good thing, but many have gone down the wrong path with unit testing based on the lack of direction.</p>
+<p>On the other hand, integration testing tools have evolved quite a bit. There was nothing like SpecFlow a decade ago. Selenium barely worked at the time. Of course, with the largely static pages of the period there wasn't as much a need for browser driven testing.</p>
+<p>So why did integration testing continue to evolve but unit testing not? I believe this is because new tools were developed and their focus was entirely on creating a better experience for integration tests. In contrast, our tools for unit testing were stuck in there generalist philosophy.</p>
+<h1 id="narrowing-focus">Narrowing Focus</h1>
+<p>When I started work on AAATest I wanted to see what would happen if I created a test framework purely for unit testing. I was sick of adding arrange, act and assert comments in every single test. AAATest would be more expressive and have this baked in.</p>
+<p>My IOC containers know what dependencies my classes require and work it out just fine at run time. But my tests, they require me to create the class in every test fixture. Not just the class but all of it's dependencies. AAATest would automatically manage these dependencies.</p>
+<p>I wanted it to work with idiomatic code and to push people down the path of writing idiomatic, modern c# code. It is an opinionated framework, the exact extent of which I don't know yet.</p>
+<p>Presenting [AAATest](https://github.com/flukus/AAATest. I could go on, but github has the majority of the content and is much better than blogger (this blog has since moved to github/hexo) for code samples. I also put together the <a href="https://github.com/flukus/AAATest/wiki/TDD-Tutorial">tutorial on TDD</a> with AAATest. I'm planning to extend this in future with more examples. So far it can only run the the tests included in the example test project, but you have to start somewhere.</p>
+</main>
+</body>
+</html>

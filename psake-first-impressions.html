@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>PSake-First-Impressions</title>
+</head>
+<body>
+<header>
+	<h1>PSake-First-Impressions</h1>
+</header>
+<main>
+<h2 id="why">Why</h2>
+<p>NAnt has been my go to build tool for nearly a decade now. Over the years I've dabled with it's inferior clone, msbuild, make, cmake, qmake, rake, jake and probably others that I've forgotten, but NAnt has remained my tool of choice.</p>
+<p>It's always had just the right feature set for nearly everything I needed, as well as the right limitations, it's possible to screw up a NAnt build, but it takes some effort. With a full scripting language things can become a lot hairier a lot quicker. Other common arguments for switching, like the angle bracket tax, I've never found particularly convincing. Sure NAnt can be verbose, but it isn't too bad once you get away from contrived examples.</p>
+<p>Recently though, I wanted to create a build for a new (old) project and NAnt seems to have fallen behind the times, not completely abandoned, but on life support. The biggest issue for me is that it hasn't yet made the transition to the world of nuget. There are packages, but the seem to be lacking features, ZipTask for instance. More importantly it seems to have all but lost the mind share it once had, not so much to msbuild, but to newer tools like Fake and PSake. Convincing others of NAnts virtues is an uphill battle these days, one I'm sick of fighting.</p>
+<p>I thought it might finally be time to look at some newer tools. After a bit of research PSake turned out to be the most promising.</p>
+<h2 id="the-good">The Good</h2>
+<p>By far the best thing about PSake is it's simplicity. It is really just a way to organize sub scripts and run them in order of dependency, with a bit of command line parsing and property organisation on the side. This is a bit off putting when your used to a feature packed framework like NAnt or MSBuild but I think it's a good thing overall.</p>
+<p>With other developer tools the world is moving away from frameworks in favor of smaller libraries that are combined ad-hoc. The recent change of direction of angularjs shows why this is a good thing, your not left at the whims of the framework developers changing direction or abandoning the project. The project might not be very active on github, but that's because there isn't much to do.</p>
+<h2 id="the-bad">The Bad</h2>
+<p>The biggest downside is also it's simplicity. NAnt contains a lot of functionality out of the box and PSake doesn't try to compete. Not to say that equivaent functionality isn't possible, but if you have have older NAnt builds and your looking for a drop in replacement then PSake isn't it.</p>
+<p>The first big gotcha I found with PSake is the weird property system. When I set up my builds there are 3 places that properties can come from.</p>
+<ol style="list-style-type: decimal">
+<li>The script itself. These are the &quot;sensible defaults&quot; for most developers.</li>
+<li>A file (selected by the command line). This allows me to have different settings on multiple branches.</li>
+<li>The command line. This is for the CI server and to override any specific setting I need to.</li>
+</ol>
+<p>There is almost definitely a way to do this in PSake, but it certainly isn't intuitive.</p>
+<p>The other issue, and this is a much bigger one, is powershell itself. I intend to go into this in another post, but until then here is the TLDR of why powershell sucks for builds:</p>
+<ul>
+<li>On error resume next. For some reason this anti-pattern was imported from the vb world. Everyone loves silent failures right?</li>
+<li>Every command has to be wrapped in PSakes Exec()</li>
+<li>Built in file operations are worse than NAnt.</li>
+</ul>
+<p>And this is just a short list that I've found in my early expiriments, given some of those design decisions I'm not sure what else to expect in future.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>If I had to sum up PSake I would say that it's a good library built on a dodgy foundation. There is certainly a lot of potential there, but until powershell libraries improve it is not ready for prime time.</p>
+</main>
+</body>
+</html>

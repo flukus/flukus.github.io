@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>ORM vs SQL part 1 - Paging</title>
+</head>
+<body>
+<header>
+	<h1>ORM vs SQL part 1 - Paging</h1>
+</header>
+<main>
+<p>In this series of posts I want to talk about the real world ramifications of not using an ORM for application development and why falling back to SQL and stored procedures is a poor choice.</p>
+<p>Quite often the argument seems to be that an SQL select and a few joins is simple and effective (which it is), and that ORM's are a useless abstraction. The problem is that simple selects don't get you very far, even when creating the CRUDiest of applications.</p>
+<p>In real applications, we have to do paging, sorting (dynamically), joining (dynamically) and filtering (dynamically). That's just on the read side, not even considering what an ORM can do for you when your writing data. I'm going to go through the abstractions an ORM provide and show how they make life easier for us.</p>
+<p>Some caveats before I go on:</p>
+<ul>
+<li>I'm talking about general application development, web, desktop or mobile doesn't really matter here.</li>
+<li>I'm talking about general line of business applications. If your working on something more exotic you may have legitimate needs that an ORM doesn't cater for.</li>
+<li>The ORM I'm using will be nHibernate, but the same applies to all ORM's.</li>
+<li>I'll mostly be talking about Sql Server.</li>
+<li>Stored procedures have there place, if your ORM creating a legitimate bottleneck you should feel free to work around it entirely.</li>
+</ul>
+<p>This part goes over paging, <a href="ORM-vs-SQL-2---Ordering">Part Two</a> goes over ordering and <a href="ORM-vs_SQL-3---Filtering">Part Three</a> goes over filtering</p>
+<h2 id="paging-with-an-orm">Paging with an ORM</h2>
+<p>Here is an example of paging a list with nHibernate, it's simple and it works, I don't even have to bother explaining it</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs">Session.<span class="fu">QueryOver</span>&lt;Product&gt;().<span class="fu">Skip</span>(<span class="dv">20</span>).<span class="fu">Take</span>(<span class="dv">10</span>)</code></pre></div>
+<h2 id="paging-with-sql">Paging with SQL</h2>
+<p>I'm going to assume Sql Server here but it varies from database to database. Before we go down that path I will also say that database independence is not a good reason to use an ORM.</p>
+<p>A quick Google search for sql paging will give you quite a number of different possibilities. MySQL, for all it's faults, at least includes the ability to say &quot;LIMIT 20, 10&quot;, which means skip 20, take 10. Those of use working with Sql Server aren't so lucky, it blows my mind that such a common scenario wasn't at the forefront of developers minds when Sql Server was first created and they've had to add various hacks over the last decade. Now that we can (hopefully) pretend that Sql Server 2000 no longer exists the best option seems to be:</p>
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span class="kw">SELECT</span> TOP (@take) <span class="kw">id</span>, name
+<span class="kw">FROM</span> (
+  <span class="kw">SELECT</span> <span class="kw">id</span>, name, <span class="fu">ROW_NUMBER</span>() <span class="kw">OVER</span>(<span class="kw">ORDER</span> <span class="kw">BY</span> name) <span class="kw">as</span> rownumber
+  <span class="kw">FROM</span> products
+) <span class="kw">as</span> <span class="kw">query</span>
+<span class="kw">WHERE</span> query.rownumber &gt; @skip
+<span class="kw">ORDER</span> <span class="kw">BY</span> query.name</code></pre></div>
+<p>This has good performance, it's relatively simple and it works well with dynamic ordering (check), which I'll get to in part two. This is exactly the sql that nHibernate will generate for you. Another possibility, as of Sql Server 2012 is:</p>
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span class="kw">SELECT</span> *
+<span class="kw">FROM</span> products
+<span class="kw">ORDER</span> <span class="kw">BY</span> name OFFSET @skip <span class="kw">ROWS</span> FETCH <span class="kw">NEXT</span> @take <span class="kw">ROWS</span> <span class="kw">ONLY</span></code></pre></div>
+<p>While still lacking the elegance of MySQL, it works and is faster than the previous example. Throw in dynamic ordering though (part 2) and the performance goes out the window. There are other possibilities I haven't covered, the pros and cons of each is worth it's own blog series, though I won't be the one writing it (if you know of one, let me know and I will link it here).</p>
+<p>The dumbest one I've seen, unfortunately the most common also, is to page on the client side (client being the application, not end user). The idea seems to be that you cache entire result sets and filter/order it in application code. People actually think this performs better, but I'll save this for a longer rant later.</p>
+<h2 id="that-doesnt-seem-too-bad">That doesn't seem too bad</h2>
+<p>Well it isn't too bad but it's not such a simple query anymore. This extra complexity goes into nearly every query in the application, so it's a non-trivial amount of extra code to maintain. In later posts we'll see how this complexity is multiplied by other, equally necessary features.</p>
+<p>Finally, compare it with the simplicity of doing the same in an ORM, which will execute the exact same query and perform the same, all that extra code starts to look pretty meaningless.</p>
+<p>In <a href="ORM-vs-SQL-2---Ordering">part two</a> I'll take a look at dynamic ordering.</p>
+</main>
+</body>
+</html>

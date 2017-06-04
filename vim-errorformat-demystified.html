@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Vim errorformat Demystified</title>
+</head>
+<body>
+<header>
+	<h1>Vim errorformat Demystified</h1>
+</header>
+<main>
+<p>Vim's errorformat is on of the more arcane part's of vim. It has constantly had me tearing my hair out, if you've found this page there's a good chance you are too. Judging from the google results I've seen this is quite a common reaction.</p>
+<p>Simple, single line formats are easy enough to work out with a little trial and error, the problems start mounting when you need multiple formats simultaneously, or worse, multi line error formats.</p>
+<p>I believe this is more to do with the documentation than anything else. Despite being extensive and containing many examples it actually does very little to explain things. Once you understand a few key things though, it's actually much simpler than it seems.</p>
+<h2 id="an-array-of-formats">An Array of Formats</h2>
+<p>The efm variable is a csv of error formats. Personally I prefer to visualize it as an array. Let's look at an example from vim's documentation example like:</p>
+<pre class="vim"><code>:set efm=%EError\ %n,%Cline\ %l,%Ccolumn\ %c,%Z%m</code></pre>
+<p>You might intuitively think that this is a single error format, which is exactly what I thought. It is in fact four completely separate error format's, delineated by commas. Vim will loop through each pattern and see if the current line matches it, breaking if it finds a match.</p>
+<p>Let me repeat that, these are four separate error formats, understanding this was my eureka moment, when I finally understood how it worked. The above format could be written as:</p>
+<pre class="vim"><code>:set efm=%Cline\ %l,%Ccolumn\ %c,%Z%m,%EError\ %n</code></pre>
+<p>Which would work exactly the same, at least in this limited scenario. The format I prefer however is this:</p>
+<pre class="vim"><code>set efm=%EError\ %n
+set efm+=%Cline\ %l
+set efm+=%Ccolumn\ %c
+set efm+=%Z%m</code></pre>
+<p>This allows the precedence order to be adjusted by moving the lines up and down. When you have to deal with multiple error formats this is incredibly important.</p>
+<h2 id="step-by-step">Step by Step</h2>
+<p>Now for a real world example, recently I wanted to write a format that works with the nunit/nant combo, the output looks like this:</p>
+<pre class="vim"><code>[exec] 1) Test Failure : TestClass.IsTrue
+[exec]   Custom error message goes here.
+[exec]   Expected: True
+[exec]   But was:  False
+[exec]
+[exec] at TestClass.IsTrue() in c:\projects\book projects\src\app\Test.cs:l ine 9</code></pre>
+<p>The first step to creating an error format is to get the file name and line:</p>
+<pre class="vim"><code>set efm=%.%#\ at\ %.%#\ in\ %f:line\ %l</code></pre>
+<p>This is saying:</p>
+<ol style="list-style-type: decimal">
+<li>Find any text (%.%# is a wild card) until we get to &quot; at &quot;.</li>
+<li>Then any text until we get to &quot; in &quot;.</li>
+<li>Then the filename (%f) followed by a colon (:)</li>
+<li>Finally the word &quot;line &quot; (whitespace sensitive) followed by the line number (%l)</li>
+</ol>
+<p>If it's run against a failing test then the output will be:</p>
+<pre><code>47 src\app\Test.cs:9:</code></pre>
+<p>This works, we can easily jump to the file and location but there is no other information. To improve this we have to use a multiple formats and use multi line syntax. First we update the format:</p>
+<pre class="vim"><code>set efm=%Z%.%#\ at\ %.%#\ in\ %f:line\ %l</code></pre>
+<p>&quot;%Z&quot; has been added to the start. This means it will only be considered if a flag is set indicating we are in the middle of a multi line error. It is also considered the end of the multi line error, the flag is turned off if this is a match. Running it now will not produce a match.</p>
+<p>To set the multi line flag we need to add another format:</p>
+<pre class="vim"><code>set efm=%E%.%#Test\ Failure\ :%.%#
+set efm+=%Z%.%#\ at\ %.%#\ in\ %f:line\ %l</code></pre>
+<p>The second line is mostly the same (note the += at the start). The first line is a format saying the following:</p>
+<ol style="list-style-type: decimal">
+<li>Set the multi line flag (%E) if this is a match</li>
+<li>Find any text until we get to &quot;Test Failure : &quot;</li>
+<li>Followed by any text.</li>
+</ol>
+<p>If we run this now it still won't work. The multi line flag is turned off if a non matching line is found. The simplest way to do this is to match any line:</p>
+<pre class="vim"><code>set efm=%E%.%#Test\ Failure\ :%.%#
+set efm+=%Z%.%#\ at\ %.%#\ in\ %f:line\ %l
+set efm+=%C%.%#</code></pre>
+<p>The %C means it only matches if the multi line flag is on. It then uses a wild card to match anything. Because this matches practically anything it is placed last, giving it the lowest precedence. If the second and third lines were switched then every line after the first error would be considered part of the error, the file name and line number would never get matched.</p>
+<p>The last part is to get all the information in between, we add a fourth pattern:</p>
+<pre class="vim"><code>set efm=%E%.%#Test\ Failure\ :%.%#
+set efm+=%Z%.%#\ at\ %.%#\ in\ %f:line\ %l
+set efm+=%C%.%#[exec]\ %#%m
+set efm+=%C%.%#</code></pre>
+<p>The added third line is saying:</p>
+<ol style="list-style-type: decimal">
+<li>Only apply this if the multi line flag is set (%C)</li>
+<li>Find any text up to [exec]</li>
+<li>Find any space characters</li>
+<li>Append the rest of the line to the error message (%m)</li>
+</ol>
+<p>The output will look like:</p>
+<pre><code>47 src\app\Test.cs:9: Custom error message goes here. Expected: true But was: false</code></pre>
+<p>To make this easier to manage it is a good idea to keep the error line it is matching in a comment:</p>
+<pre class="vim"><code>&quot;[exec] 1) Test Failure : TestClass.IsTrue
+set efm=%E%.%#Test\ Failure\ :%.%#
+&quot;[exec] at TestClass.IsTrue() in c:\projects\book projects\src\app\Test.cs:l ine 9
+set efm+=%Z%.%#\ at\ %.%#\ in\ %f:line\ %l
+&quot;[exec]   Custom error message goes here.
+&quot;[exec]   Expected: True
+&quot;[exec]   But was:  False
+set efm+=%C%.%#[exec]\ %#%m
+&quot;[exec]
+set efm+=%C%.%#</code></pre>
+<h2 id="more-errors">More Errors</h2>
+<p>The above assumes that nunit errors are all we care about but there are many others, from the compiler itself and the build script itself being the two obvious ones. If the build script itself throws an error it looks like this:</p>
+<pre><code>c:\projects\project1\nant.build(23,5):
+Error loading buildfile.
+
+    The &#39;cscvffe&#39; start tag on line 11 position 4 does not match the end tag of &#39;csc&#39;. Line 23, position 5.</code></pre>
+<p>The error format for this is rather straight forward:</p>
+<pre class="vim"><code>&quot;c:\projects\project1\nant.build(23,5):
+set efm=%E%f(%l\\,%c):
+&quot;Error loading buildfile.
+&quot;
+&quot;    The &#39;cscvffe&#39; start tag on line 11 position 4 does not match the end tag of &#39;csc&#39;. Line 23, position 5.
+set efm+=%C%m</code></pre>
+<p>To get it to work with other errors though, it need to be arranged in order of specificity:</p>
+<pre class="vim"><code>&quot;[exec] 1) Test Failure : TestClass.IsTrue
+set efm=%E%.%#Test\ Failure\ :%.%#
+&quot;c:\projects\project1\nant.build(23,5):
+set efm=%E%f(%l\\,%c):
+&quot;[exec] at TestClass.IsTrue() in c:\projects\book projects\src\app\Test.cs:l ine 9
+set efm+=%Z%.%#\ at\ %.%#\ in\ %f:line\ %l
+&quot;[exec]   Custom error message goes here.
+&quot;[exec]   Expected: True
+&quot;[exec]   But was:  False
+set efm+=%C%.%#[exec]\ %#%m
+&quot;Error loading buildfile.
+&quot;
+&quot;    The &#39;cscvffe&#39; start tag on line 11 position 4 does not match the end tag of &#39;csc&#39;. Line 23, position 5.
+set efm+=%C%m
+&quot;[exec]
+set efm+=%C%.%#</code></pre>
+<p>The start format goes near the top because it signifies the start of a new error no matter what. The message line is very generic though, so it has to go right near the bottom.</p>
+<p>Error formats, and the quick list itself is one of those features that really makes vim shine, It just needs some customization for your particular tool set. Hopefully I've straightened out some misconceptions here.</p>
+</main>
+</body>
+</html>

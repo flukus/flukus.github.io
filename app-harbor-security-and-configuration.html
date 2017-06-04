@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>App Harbor - Security and Configuration</title>
+</head>
+<body>
+<header>
+	<h1>App Harbor - Security and Configuration</h1>
+</header>
+<main>
+<p>By now we've all read the story about <a href="http://it.slashdot.org/story/13/01/25/132203/github-kills-search-after-hundreds-of-private-keys-exposed">keys and passwords</a> being kept in source control. It seems pretty obvious it's a bad idea but it tends to be our tools that force us down this path. At the moment this is being forced on me by app harbor and it's deployment model.</p>
+<p>App Harbor deployment works by taking a web.config and applying the transformations in web.release.config. The problem with this is that all you configuration must be under source control, and everyone that works on the source has access to private security information.</p>
+<h2 id="web.config">Web.Config</h2>
+<p>As a general rule, I don't like to keep the Web.config file in source control at all and generally write an ignore rule for it. Having it in source control virtual guarantees that at some point someone will put private information in there accidentally. Nothing is more frustrating than pulling the latest version of the source and having someone overwrite all your settings.</p>
+<p>With a traditional CI server setup I would have a config template and would generate a full Web.config based on settings in the CI server but App Harbor is very limited support for this style. This is a nice compromise, it's easy to setup a configuration for a new user or server and it keeps everyone from overwriting each others configuration files.</p>
+<p>App Harbor however, forces you to have a Web.config file in source control. Forcing you to be just one blonde moment away from committing private information.</p>
+<h2 id="configuration-variables">Configuration Variables</h2>
+<p>App Harbor provides half a solution, it allows you to set configuration variables in the application manager interface. While this is okay for some simple key value settings, sometimes the configuration is more complex. Here is an example of a configuration section using the <a href="https://github.com/titarenko/OAuth2">OAuth2</a></p>
+<pre><code>Source ommited becausee it was too messy to clean up</code></pre>
+<p>The only way to get such a configuration into App Harbor is to have it in a config file under source control, giving everyone access to private information.</p>
+<h2 id="what-id-like">What I'd Like</h2>
+<p>What I'd really like is rather simple. I want to store a config file in the application manager interface that will be copied into the project as part of the build. This way no configuration has to be under source control, no private information shared and simplicity remains.</p>
+</main>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Simple Abstractions</title>
+</head>
+<body>
+<header>
+	<h1>Simple Abstractions</h1>
+</header>
+<main>
+<p>Most of us agree by now that the single responsibility principle is a good idea. Small, composable parts are easy to read, write, test and maintain.</p>
+<p>This introduces another issue though, wiring these components together. IOC containers do a great job of constructing our object graphs, but our components still have to specify their dependencies.</p>
+<p>Writing essentially the same constructor code over and over gets old fast. Typically projects will resort to some combination of property injection or the service locator pattern to avoid this. Neither of these options is particularly helpful from a code readability or unit testing point of view.</p>
+<p>So how do we get the benefits of the single responsibility principle without the drawbacks? First we have to take a step back and look at our interactions. Lets look at the interactions of a controller in a typical MVC application.</p>
+<h2 id="what-does-a-controller-do">What does a controller do?</h2>
+<p>A controller is responsible for coordinating the interaction between the user interface and the rest of the application.</p>
+<p>The user interface is how we interact with the users themselves, usually be returning some HTML via a view or some json data. Often we will also return some type of message to the user or redirect the user to another page.</p>
+<p>The rest of the application could be just about anything. Typically there will be some type of database to read/write from, some sort of logging, some sort of message queue, etc. The specifics will vary from application to application.</p>
+<p>So let's see what happens when we model these interactions with the IUser and IApplication interfaces.</p>
+<h2 id="iuser">IUser</h2>
+<p>Here is what an IUser interface may look like:</p>
+<pre class="c#"><code>public interface IUser {
+  public string UserName  { get; }
+  public int Id { get; set; }
+  public string[] Roles { get; set; }
+
+  public void Notify(string message);
+  public void Warn(string message);
+  public T Session&lt;T&gt;(string index);
+  public ActionResult Redirect();
+  public ActionResult Redirect(string location);
+  public ActionResult View();
+  public ActionResult View(object model);
+}</code></pre>
+<p>The first few properties are some general information about the user that the controller will need either directly or indirectly. Other components may need this information, but as the coordinator it should be the controller passing it along.</p>
+<p>Next there is the Notify and Warn methods, this is how the controller can communicate with the user. A success or failure method would be sent to the user via these methods. The actual implementation would store this somewhere and make it available to the view.</p>
+<p>Session is our temporary storage area. Because sessions are per user, the IUser interface is the natural place to put it.</p>
+<p>The rest of the methods deal with returning action results. Depending on the design you may or may need to return a result from an MVC action.</p>
+<h2 id="iapplication">IApplication</h2>
+<p>An IApplication interface could look something like this:</p>
+<pre class="c#"><code>public interface IApplication {
+  public void LogMessage(string message);
+  public void LogError(string message);
+  public void PublishMessage(object message);
+  public Query&lt;T&gt; Query&lt;T&gt;();
+  public Map&lt;T, U&gt;(T mapFrom);
+}</code></pre>
+<p>The log methods are self explanatory. PublishMessage will publish the message to a message queue. Query<T> will delegate to the CQRS sub system and Map will delegate to automapper.</p>
+<p>The actual specifics will vary tremendously from project to project.</p>
+<h1 id="single-responsibility-principle">Single Responsibility Principle</h1>
+<p>It is natural to assume that any implementation of these interfaces will violate the single responsibility principle, that they would be handling many unrelated tasks.</p>
+<p>This is where the facade pattern comes in. An implementation of these interfaces should be a facade only, They should contain no real logic, simply pass arguments to a real implementation.</p>
+<p>They only responsibility of these implementations is to delegate:</p>
+<pre class="c#"><code>public class System : IApplication {
+  private readonly ILog Log;
+  private readonly IBus Bus;
+  private readonly ISession Session;
+
+  public System(ILog log, IBus bus, ISession session) {
+    Log = log;
+    Bus = bus;
+    Session = Session;
+  }
+
+  public void LogMessage(string message) {
+    Log.LogMessage(message);
+  }
+
+  /* ... */
+
+  public Query&lt;T&gt; Query&lt;T&gt;() {
+    return Session.Query&lt;T&gt;();
+  }
+}</code></pre>
+<p>So now we have a system with many small, testable components. Our controllers only have two dependencies to worry about. And finally, our IOC container can construct our object graph purely from constructors.</p>
+<p>We've got all the benefits of SRP and IOC, with none of the downsides.</p>
+</main>
+</body>
+</html>

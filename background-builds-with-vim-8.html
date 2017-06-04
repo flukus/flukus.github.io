@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Background Builds with Vim 8</title>
+</head>
+<body>
+<header>
+	<h1>Background Builds with Vim 8</h1>
+</header>
+<main>
+<p>Hallelujah! The impending release of Vim 8 is finally adding asynchronous process support. This is something I've wanted since I first started using vim. It finally opens up a whole new world of possibilities.</p>
+<p>Lately I've been working on an as yet unnamed plugin to manage projects. Part of that plugin has been creating a background build process. Through a variety of hacks I got it to work, but never to work well, so when I discovered that vim 8 was finally supporting background jobs properly I downloaded a nightly binary and started hacking away. Here are the results.</p>
+<h2 id="starting-the-job">Starting the job</h2>
+<p>First let's create some handlers to receive message from the build. ExitHandler will be called when our process finishes, Outhandler will be called for every line from stdout. OutHandler won't actually get used but I found nothing worked without it.</p>
+<pre class="vim"><code>function! OutHandler(job, message)
+endfunction
+
+function! ExitHandler(job, status)
+endfunction</code></pre>
+<p>Next is creating a buffer to hold the output. Technically this isn't needed, but I like being able to see the raw output at times.</p>
+<pre class="vim"><code>
+function! ProjectMake()
+    let currentBuf = bufnr(&#39;%&#39;)
+    let g:makeBufNum = bufnr(&#39;make_buffer&#39;, 1)
+    exec g:makeBufNum . &#39;bufdo %d&#39;
+    exec &#39;b &#39; . currentBuf
+endfunction</code></pre>
+<p>First of all this get's the current buffer number. Then a new buffer is created or reused with the bufnr function. This buffer is then reset and finally switches back to the whatever the current buffer was.</p>
+<p>Now we start the job in the same function:</p>
+<pre class="vim"><code>let cmd = &#39;nant.bat build test&#39;
+let job = job_start(cmd, {&#39;out_io&#39;: &#39;buffer&#39;, &#39;out_name&#39;: &#39;make_buffer&#39;, &#39;out_cb&#39;: &#39;OutHandler&#39;, &#39;exit_cb&#39;: &#39;ExitHandler&#39;})</code></pre>
+<p>The specifics of what program is used to compile will obviously vary from project to project, here cmd is set to be a simple batch file that I use to bootstrap my nant builds. I compile and execute tests as part of my normal build, this way compile errors and test failures both end up in my quickfix list.</p>
+<p>We tell the process to output to a buffer with the out_io and out_name parameters. out_cb and exit_cb set our out and exit callbacks respectively.</p>
+<p>Finally we add the command to call ProjectMake:</p>
+<pre class="vim"><code>command! -n=0 -complete=none ProjectMake call ProjectMake()</code></pre>
+<p>Calling :ProjectMake will build the project, now to get some feedback some better feedback from the build.</p>
+<h2 id="parsing-the-output">Parsing the output</h2>
+<p>Above we defined the exit handler but did nothing with it. To get the errors we simple add this to the exit handler:</p>
+<pre class="vim"><code>exec &#39;silent! cb! &#39; . g;makeBufNum</code></pre>
+<p>This parses the buffer with the current error format, the same as what would happen if we called :make. If you want the errors to pop up after you build (I don't) you can remove the silent! and '!' from the command.</p>
+<p>Personally I like the errors to be a bit less intrusive, so I have the count appear in my airline:</p>
+<pre class="vim"><code>let list = getqflist()
+let ecount = 0
+for i in list
+    if i.type == &quot;E&quot;
+        let ecount+=1
+    endif
+endfor
+let g:errorCount = ecount
+exec &#39;AirlineRefresh&#39;</code></pre>
+<p>This just sets a global variable with the error count. My custom airline functions will pick up this number and display it in the bottom corner.</p>
+<h2 id="autobuild">Autobuild</h2>
+<p>Manual building doesn't fit the theme of this blog at all of course. Being proactively lazy means doing a little extra work now for a little bit more laziness in future. Let's create an auto command to compile whenever we save a file:</p>
+<pre class="vim"><code>augroup autobuild &quot; {
+    autocmd!
+    au BufWritePost c:/my/project/dir/*.cs call ProjectMake()
+augroup END &quot; }</code></pre>
+<p>Now whenever we save a file the project will automatically build. The final thing is to add some concurrency checks and the code ends up like this:</p>
+<pre class="vim"><code>let g:building = 0
+let g:queueBuild = 0
+
+function! ProjectMake()
+
+    &quot;if a build is active, queue a build instead
+    if g:building == 0
+        let g:queueBuild = 1
+        return
+    endif
+
+    &quot;create/wipe the make buffer
+    let currentBuf = bufnr(&#39;%&#39;)
+    let g:makeBufNum = bufnr(&#39;make_buffer&#39;, 1)
+    exec g:makeBufNum . &#39;bufdo %d&#39;
+    exec &#39;b &#39; . currentBuf
+
+    &quot;execute the job
+    let cmd = &#39;nant.bat build test&#39;
+    let job = job_start(cmd, {&#39;out_io&#39;: &#39;buffer&#39;, &#39;out_name&#39;: &#39;make_buffer&#39;, &#39;out_cb&#39;: &#39;OutHandler&#39;, &#39;exit_cb&#39;: &#39;ExitHandler&#39;})
+endfunction
+
+function! ExitHandler(job, status)
+    &quot;load the qf list
+    exec &#39;silent! cb! &#39; . g;makeBufNum
+
+    &quot;update airline
+    let list = getqflist()
+    let ecount = 0
+    for i in list
+        if i.type == &quot;E&quot;
+            let ecount+=1
+        endif
+    endfor
+    let g:errorCount = ecount
+    exec &#39;AirlineRefresh&#39;
+
+    &quot;call ProjectMake if a build is queued
+    let g:building = 0
+    if g:queueBuild == 1
+        call ProjectMake()
+    endif
+
+endfunction
+</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>Background jobs are a long awaited and fantastic addition to vim. Building projects in the background is just one of the most obvious examples, I expect to see many more in the near future. Hopefully the tired old saying of vim being &quot;just&quot; a text editor can finally be put to rest now it has the necessary features of a true IDE.</p>
+</main>
+</body>
+</html>

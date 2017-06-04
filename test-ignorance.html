@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Test Ignorance</title>
+</head>
+<body>
+<header>
+	<h1>Test Ignorance</h1>
+</header>
+<main>
+<p>Every unit test framework I can think of comes with a way to ignore tests, usually it's as simple as adding an attribute to the test. While I was thinking of what syntax to use for ignore in <a href="https://github.com/flukus/AAATest">AAATest</a>, I starting wondering if it should be a feature at all.</p>
+<p>The biggest problem with ignored unit tests is that there is nothing compelling anyone to turn them back on. Once they are ignored they have a tendency to stay ignored forever. A test can stay in an ignored state for years without anyone noticing or caring. The person who decided to ignore it in the first place could be long gone.</p>
+<p>At the moment I am leaning towards not providing a mechanism to ignore tests(and not just because it's the easiest thing to do). It would force the user to either delete or comment out the test.</p>
+<p>Deleting would obviously force you to consider if the test would really be needed in future. Deleting is something that we don't do lightly, only when we are absolutely sure. Commenting is often used as a soft delete, many a person has argued that if code is commented out then it should be deleted. Does this rule follow for unit tests? I'm still not sure but I'm leaning toward yes. On a side note, I wonder if it's possible to create an NDepend rule that fails if code is commented?</p>
+<p>The only functional difference between commenting and ignoring is that commented code does not have any maintenance overhead. If your ignoring the test then is paying the maintenance cost for it worthwhile? Only if you plan to enable it again. If your ignoring a test for long enough that it gets out of sync with the code, should it be deleted? Absolutely.</p>
+<p>The project I'm working on at the moment has a failing test, it is expected to fail and something that I intend to work on soon. In this case I should have been working in a branch and wasn't. By the time the branch is ready to be pulled back in then the test should be passing. A branch is the correct place for incomplete code and is therefore allowed to contain failing tests. If your code is in an incomplete state for long enough that you want to ignore tests then you really should be working on a branch anyway.</p>
+<p>My current, though not staunchly held, opinion is that tests should be deleted rather than ignored and that being able to ignore tests is a hack for poor SCM usage. Until someone can provide me with a better argument <a href="https://github.com/flukus/AAATest">AAATest</a> will not be able to ignore tests.</p>
+</main>
+</body>
+</html>

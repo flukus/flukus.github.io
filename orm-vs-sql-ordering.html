@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>ORM vs SQL part 2 - Ordering</title>
+</head>
+<body>
+<header>
+	<h1>ORM vs SQL part 2 - Ordering</h1>
+</header>
+<main>
+<p>Most applications will need to to control the ordering of the data being presented to users, the exact requirements will differ depending on the application and situation, but virtually all will require it. Sometimes the same data will presented in several places, each requiring it's own order for natural reasons. Other times dynamic tables will be presented and users will control what order the view information in. Some even allow full control and let the users specify multiple orders.</p>
+<p>In the later two cases ordering usually goes hand in hand with filtering, but I'm going to leave the filtering until part three. In <a href="ORM-vs-SQL-1---Paging">part one</a> I looked at paging.</p>
+<h2 id="ordering-with-an-orm">Ordering with an ORM</h2>
+<p>Simple ordering is straight forward with an ORM (and with sql for that matter):</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="dt">var</span> users = session.<span class="fu">QueryOver</span>&lt;User&gt;()
+  .<span class="fu">OrderBy</span>(x =&gt; x.<span class="fu">LastName</span>).<span class="fu">Asc</span>.<span class="fu">List</span>();</code></pre></div>
+<p>In fact, at this level, sql is even simpler. An ORM starts to shine when you have some other logic controlling the ordering because you get a composable query object to work with, for example:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="dt">var</span> query = session.<span class="fu">QueryOver</span>&lt;User&gt;();
+<span class="kw">if</span> (orderByLastName == <span class="kw">true</span>)
+  query = query.<span class="fu">OrderBy</span>(x=&gt; x.<span class="fu">LastName</span>).<span class="fu">Asc</span>;
+<span class="kw">if</span> (orderByLastLogin == <span class="kw">true</span>)
+  query = query.<span class="fu">OrderBy</span>(x=&gt; x.<span class="fu">LastLogin</span>).<span class="fu">Asc</span>;</code></pre></div>
+<p>By composing queries like this, any ordering that can be logically described can be performed, your only limit is your own code and how much power and flexibility you want to give the end users. The ORM will generate the sql needed for that individual scenario and make full use of our indexes.</p>
+<h1 id="ordering-with-sql">Ordering with Sql</h1>
+<p>Simple ordering in sql is extremely straight forward:</p>
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span class="kw">select</span> TOP <span class="dv">10</span> * <span class="kw">from</span> users <span class="kw">order</span> <span class="kw">by</span> lastName</code></pre></div>
+<p>Most importantly, this will use the index on lastName. On my computer this will execute in ~5ms with 1,000,000 rows. This is essentially what our ORM will generate.</p>
+<p>Now, let's say our application is showing a list of users in two places, the first we are trying to find users by last name and the second we want to see who were the latest to login. We can write two stored procedures, which will be identical apart from the order by clause. Or we can add some dynamic ordering to the query:</p>
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span class="kw">SELECT</span> TOP <span class="dv">10</span> <span class="kw">id</span>, lastName, firstName
+<span class="kw">FROM</span> users
+<span class="kw">order</span> <span class="kw">by</span> <span class="kw">CASE</span>
+  <span class="kw">WHEN</span> @OrderBy = <span class="st">&#39;LastNameAsc&#39;</span> <span class="kw">THEN</span> lastName
+  <span class="kw">WHEN</span> @OrderBy = <span class="st">&#39;FirstName&#39;</span> <span class="kw">THEN</span> firstName</code></pre></div>
+<p>The drawbacks for this are that the data types have to be the same in the case statement, so we can't use the same query to order by lastLogin. Likewise, we can't mix ascending and descending. And even if we are ordering on lastName, which has an index in this scenario, the index will not get used, resulting in bad performance, 753ms, which is more than two orders of magnitude slower for the same functionality.</p>
+<p>In <a href="ORM-vs-SQL-1---Paging">part one</a> I said the new 2012 offset/next syntax performed quite slowly with dynamic ordering, this is why.</p>
+<h2 id="ordering-with-sql---again">Ordering with Sql - Again</h2>
+<p>So being unable to mix datatypes is a deal breaker in our scenario. we want to order by either lastName or lastLogin. The easiest way to do this is to invite our old friend from <a href="ORM-vs-SQL-1---Paging">part one</a>, rownumber:</p>
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span class="kw">SELECT</span> TOP <span class="dv">10</span> <span class="kw">id</span>, lastName, firstName,
+  <span class="kw">CASE</span>
+    <span class="kw">WHEN</span> @OrderBy = <span class="st">&#39;LastNameAsc&#39;</span> <span class="kw">THEN</span> <span class="fu">ROW_NUMBER</span>() <span class="kw">OVER</span>(<span class="kw">ORDER</span> <span class="kw">BY</span> lastName)
+    <span class="kw">WHEN</span> @OrderBy = <span class="st">&#39;LastLoginDesc&#39;</span> <span class="kw">THEN</span> <span class="fu">ROW_NUMBER</span>() <span class="kw">OVER</span>(<span class="kw">ORDER</span> <span class="kw">BY</span> lastLogin <span class="kw">desc</span>)
+  <span class="kw">END</span> <span class="kw">as</span> rownumber
+<span class="kw">FROM</span> users
+<span class="kw">order</span> <span class="kw">by</span> rownumber</code></pre></div>
+<p>Finally, we can order by multiple data types and by ascending or descending order. But it comes at a hefty price, it's yet another order of magnitude slower, ~5800ms, way beyond what I would consider acceptable.</p>
+<h2 id="ordering-and-paging">Ordering and Paging</h2>
+<p>So now let's look at the combination of paging and ordering:</p>
+<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span class="kw">SELECT</span> TOP(@take) <span class="kw">id</span>, lastName, firstName, email, lastLogin
+<span class="kw">FROM</span> (
+  <span class="kw">SELECT</span> <span class="kw">id</span>, lastName, firstName, email, lastLogin,
+  <span class="kw">CASE</span>
+    <span class="kw">WHEN</span> @OrderBy = <span class="st">&#39;LastNameAsc&#39;</span> <span class="kw">THEN</span> <span class="fu">ROW_NUMBER</span>() <span class="kw">OVER</span>(<span class="kw">ORDER</span> <span class="kw">BY</span> lastName)
+    <span class="kw">WHEN</span> @OrderBy = <span class="st">&#39;LastLoginDesc&#39;</span> <span class="kw">THEN</span> <span class="fu">ROW_NUMBER</span>() <span class="kw">OVER</span>(<span class="kw">ORDER</span> <span class="kw">BY</span> lastLogin <span class="kw">desc</span>)
+  <span class="kw">END</span> <span class="kw">as</span> rownumber
+  <span class="kw">FROM</span> users
+) <span class="kw">as</span> <span class="kw">query</span>
+<span class="kw">WHERE</span> query.rownumber &gt; @skip
+<span class="kw">ORDER</span> <span class="kw">BY</span> rownumber</code></pre></div>
+<p>Our simply little select isn't so simple any more and the performance has suffered terribly (~8500ms), to the point where it is immediately noticeable to end users. All because you thought ORM's were too slow.</p>
+<p>We are quickly approaching the limits of what we can do with sql. The ORM can easily handle ordering over multiple columns dynamically, to do the same with sql would require a fundamentally different, and probably much more complex, strategy.</p>
+<h2 id="why-are-orms-faster">Why are ORM's faster?</h2>
+<p>In this scenario our ORM is 3 orders of magnitude faster than a stored procedure with the same functionality. This is simply because it generates queries dynamically, it doesn't have to account for every possibility at programming time because it can adjust at run time instead.</p>
+<p>Sql, despite frequently being championed as faster, can not even make use of indexes appropriately as soon as you throw a real world situation at it.</p>
+<p>The final score, with paging and ordering is ORM: ~10ms, Sql: ~8500ms.</p>
+<p>Next up, I'll take a look at <a href="ORM-vs-SQL-3---Filtering">dynamic filtering</a>.</p>
+</main>
+</body>
+</html>

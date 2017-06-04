@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Rediscovering Make</title>
+</head>
+<body>
+<header>
+	<h1>Rediscovering Make</h1>
+</header>
+<main>
+<p>I have a confession to make (pun intended), I never learned to use make. Those of you that do know make will probably be feeling the urge to start screaming about my presence on your lawn about now. I'll let you know now that this urge is going to get worse and that it's completely justifiable justifiable. It's not that linux/unix is alien to me, or the cli. I'm not exactly a master at either, but I've never been afraid of them and use them quite often.</p>
+<p>So how did I miss make? By the time I was a developer ant, nant, rake, etc were all in vogue and I made the mistake of thinking that gnu make was just one of those tools only c/c++ greybeards used. Lately all the attention been psake, fake, gradle and the million nodejs based tools designed to avoid the &quot;angle bracket tax&quot;. Surprisingly (to me at least) we've had such a tool for more than 30 years, and it's been getting reinvented (poorly) ever since.</p>
+<p>I think a big reason people (myself included) are put off might be the make tutorials, which seem to focus exclusively on c. Take a look at the official <a href="https://www.gnu.org/software/make/manual/make.html#Simple-Makefile">gnu make tutorial</a>, it focuses on managing object files, headers and all that stuff we don't care about when using higher level languages. For the most part, compiling in these languages (c#, java) is easy, our build scripts are more concerned about all the other little things, but make is just as good at these as it is compiling c code. So let's take a look at how we can use make.</p>
+<h1 id="make-101">Make 101</h1>
+<p>First of all, you need to install make. For linux users it's probably already installed, if it's not you can just apt-get/rpm/whatever install make. For windows users I'd recommend <a href="https://www.cygwin.com/">cygwin</a>. There is also bash for windows, but that doesn't inter operate with windows commands and I'm going to use some later on. Then we create our first makefile called (Makefile):</p>
+<pre class="make"><code>hello:
+    echo hello
+goodbye: hello
+    echo goodbye</code></pre>
+<p>This makefile contains two tasks (we'll get to why this is wrong in a bit). There is the hello task and the goodbye task, which depends on the hello task. Dependencies are everything listed after the colon. The other thing to note is that the execution of those tasks is done with standard unix commands. There is no api to learn, no functions (or lack thereof) to limit it's effectiveness as a build tool, just tools that anyone comfortable with unix would know.</p>
+<p>To execute this build script simply go to the directory it's in and execute:</p>
+<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="fu">make</span> hello goodbye</code></pre></div>
+<p>This will explicitly execute both tasks. If we wanted to run hello only we could run make with just that argument. Because goodbye depends on hello, executing just goodbye will always execute hello first.</p>
+<p>Now this is where make differs from most build tools. We aren't really defining tasks but outputs, our hello task above is saying that it outputs a file named &quot;hello&quot;. I want to drum this in because it really is the key to understanding make. When we write &quot;hello:&quot; we are telling make that the following instructions will produce a file named &quot;hello&quot;. To demonstrate this, try changing the Makefile:</p>
+<pre class="make"><code>hello:
+    echo hello
+    touch hello
+goodbye: hello
+    echo goodbye
+    touch goodbye</code></pre>
+<p>Here the touch command is being used to create files (or change there modified date if they exist). If you were to run hello now, it would create the file the first time but subsequent runs would do nothing because the output exists. The same will happen for the goodbye task. This is how make handles incremental builds, it will only rebuild what it needs to.</p>
+<p>Another subtle thing going on here is dependency tracking. Because hello is a dependency of goodbye, any change to this file will force goodbye to execute. To demonstrate this first run &quot;make goodbye&quot;, then run it again and see that it will not execute. After that, run the &quot;touch hello&quot; command manually, this will update the last modified date on the hello file. Finally, run &quot;make goodbye&quot; again, it will detect that it's output (goodbye) is older than it's input and execute.</p>
+<p>The next step is to see how it works with something more real world.</p>
+<h1 id="stage-1---setup">Stage 1 - Setup</h1>
+<p>So now we've covered the basics lets see how make handles a real world scenario. This isn't a complete project but it covers a few common tasks, hopefully enough to give you an idea of how simple and flexible make can be.</p>
+<p>The first step is to define some variables:</p>
+<pre class="make"><code>init = ./build/.init
+app = ./build/app.exe
+lib = build/lib.dll
+migrate = build/migrate.dll
+version = build/Version.cs
+src_app = $(shell find src/app -type f -name &#39;*.cs&#39;) $(version)
+src_lib = $(shell find src/lib -type f -name &#39;*.cs&#39;) $(version)
+src_migrate = $(shell find src/migrate -type f -name &#39;*.cs&#39;) $(version)
+
+Version ?= 2.0.0.1
+Csc ?= csc
+Db ?= &quot;Data Source=localhost;Integrated Security=SSPI;Initial Catalog=Test&quot;</code></pre>
+<p>The first (init) is our build directory, it's where all build artifacts will be located. The next 3 variables (app, lib and migrate) are the compiled outputs. In this example we're building a library and a project that uses it, along with some database migrations based on fluent migrator. Note that we're also building with csc and not msbuild, there are pros and cons to both approaches but I went with the simplest here. Next is the version file you've likely seen as part of any .net project. Changing this is often a manual step but here we're going to use the build system to save some work. More on that later.</p>
+<p>The next 3 are lists of source files. We use the find command to produce this list and also append the version file, even though it doesn't exist yet. Notice that this is using the &quot;$(shell ...)&quot; command to define a variable. Make follows the unix philosophy of combining many small commands to produce big results.</p>
+<p>The final variables are our &quot;sensible defaults&quot;. We define a default value but it's expected that they can and will be overridden by developers and CI servers.</p>
+<p>Finally, let's define a few tasks to bootstrap our build:</p>
+<pre class="make"><code>echo:
+    @echo Version: ${Version}
+    @echo Csc: ${Csc}
+    @echo src_app: ${src_app}
+    @echo src_lib: ${src_lib}
+    @echo src_migrate: ${src_migrate}
+    @echo Db: ${Db}
+clean:
+    rm -fr ./build
+$(init):
+    .nuget/NuGet.exe restore -PackagesDirectory packages
+    mkdir -p build
+    touch $(init)
+init: $(init)</code></pre>
+<p>The first is the echo task, which dumps all our variables to screen. This is recommended for any build tool, it simplifies debugging considerably. If this gets unwieldy then there are some more elegant ways, but here they also demonstrate how variable substitution works. Next is clean, which blows away our build directory and starts from a clean slate. Then $(init) which restores nuget packages and creates the build directory. It will also create the ./build/.init file, so it won't run more than once.</p>
+<p>There is also a second init task which simplifies calling from the command line. The value of $(init) is a callable task. It can be invoked with &quot;make ./build/.init&quot;, but calling &quot;make init&quot; is much simpler.</p>
+<p>Remember, tasks are outputs, so &quot;make init&quot; will run unless there is a file called &quot;init&quot;, we aren't making one so it will be executed every time. $(init) on the other hand, is a file we create, so the task will only get executed if the file does not exist. In practice here, init will always be executed and it's dependency $(init) will only be executed once.</p>
+<h1 id="stage-2---compiling">Stage 2 - Compiling</h1>
+<p>The actual meat and potatoes of this build script is compiling the application. It looks a little complicated but is really very simple:</p>
+<pre class="make"><code>$(version): $(init)
+    sed s&#39;/$${Version}/$(Version)/g&#39; src/Version.template.cs &gt; build/Version.cs
+version: $(version)
+$(lib): $(init) $(src_lib)
+    $(Csc) -out:$(lib) -target:library $(src_lib)
+$(app): $(init) $(lib) $(src_app)
+    $(Csc) -out:$(app) -r:$(lib) $(src_app)
+$(migrate): $(init) $(src_migrate)
+    $(Csc) -out:$(lib) -target:library $(src_migrate)
+build: $(app) $(lib) $(migrate)</code></pre>
+<p>The first tasks here is to produce a version file. This takes a c# template and replaces values using the sed command. The template looks like this:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="kw">using</span> System.<span class="fu">Reflection</span>;
+[assembly:<span class="fu">AssemblyVersion</span>(<span class="st">&quot;${Version}&quot;</span>)]</code></pre></div>
+<p>The string &quot;${Version}&quot; in our template will be replaced with the value of the $(Version) variable. The output will be ./build/Version.cs which will be used when we compile. Again there is a &quot;version&quot; output defined to make it easy to call from the command line.</p>
+<p>The next few outputs are our compilation targets, which just call csc with a list of files to build. The only interesting thing here is that $(app) has a dependency on $(lib) and that they all have a dependency on their source files. This is how an incremental build is defined, This is some of the hidden genius behind make.</p>
+<p>$(lib) will only be executed if any of it's dependencies are newer than itself. This is based on the last modified date of the files, so if none of source files in ./src/lib/ have been modified since the dll was last compiled, nothing will happen. Likewise, $(app) will only execute if any $(src_app) or $(lib) have been modified more recently than $(app). So our changes will cascade, changes to a source file in a library will force $(lib) to rebuild, this will then force $(app) to rebuild.</p>
+<p>The final part of this example is the migrate task:</p>
+<pre class="make"><code>migrate: $(migrate)
+    packages/FluentMigrator.1.6.2/tools/Migrate.exe -c $(Db) -db sqlserver2008 -a $(migrate) </code></pre>
+<p>This will invoke fluent migrator with our migrations and bring the database up to date.</p>
+<h1 id="conclusion">Conclusion</h1>
+<p>So that's make, a deceptively simple yet flexible build tool. In terms of raw LOC, make requires a lot less than any other build tool I've used. Incremental builds are something you get for free, not something you have to work for. There is no API to learn, just standard unix commands.</p>
+<p>I wish I'd listened to the greybeards and learned make much earlier.</p>
+</main>
+</body>
+</html>

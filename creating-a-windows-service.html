@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Creating a Windows Service</title>
+</head>
+<body>
+<header>
+	<h1>Creating a Windows Service</h1>
+</header>
+<main>
+<p>Creating a windows service in .net is simple. Dead simple. Creating one that's pleasant to work with is only slightly more complicated. We're talking a couple of dozen LOC in total, it's that simple.</p>
+<p>This is why I've never been able to understand the love for <a href="http://topshelf-project.com/">Topshelf</a>. It adds another dependency to manage yet saves very little, if any, code.</p>
+<p>So I figured I'd create a post to show just how easy it is.</p>
+<h2 id="step-1---create-the-app">Step 1 - Create the App</h2>
+<p>First thing to do is to create the logic the service needs. This town crier example is straight from Topshelf's <a href="http://docs.topshelf-project.com/en/latest/configuration/quickstart.html">show me the code</a> section:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="kw">public</span> <span class="kw">class</span> TownCrier {
+    <span class="kw">readonly</span> Timer _timer;
+    <span class="kw">public</span> <span class="fu">TownCrier</span>() {
+        _timer = <span class="kw">new</span> <span class="fu">Timer</span>(<span class="dv">1000</span>) { AutoReset = <span class="kw">true</span> };
+        _timer.<span class="fu">Elapsed</span> += (sender, eventArgs) =&gt; Console.<span class="fu">WriteLine</span>(<span class="st">&quot;It is {0} and all is well&quot;</span>, DateTime.<span class="fu">Now</span>);
+    }
+    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">Start</span>() { _timer.<span class="fu">Start</span>(); }
+    <span class="kw">public</span> <span class="dt">void</span> <span class="fu">Stop</span>() { _timer.<span class="fu">Stop</span>(); }
+}</code></pre></div>
+<p>Then we need to run it, this can be done withe a standard console app:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="kw">class</span> Program {
+    <span class="kw">static</span> <span class="dt">void</span> <span class="fu">Main</span>(<span class="dt">string</span>[] args) {
+        <span class="dt">var</span> crier = <span class="kw">new</span> <span class="fu">TownCrier</span>();
+        crier.<span class="fu">Start</span>();
+        System.<span class="fu">Console</span>.<span class="fu">WriteLine</span>(<span class="st">&quot;press any key to quit&quot;</span>);
+        System.<span class="fu">Console</span>.<span class="fu">Read</span>();
+        crier.<span class="fu">Stop</span>();
+    }
+}</code></pre></div>
+<p>Nothing amazing yet.</p>
+<h2 id="turn-it-into-a-service">Turn it into a Service</h2>
+<p>Turning this into a service requires some extra communication with the OS. In .net this is handled by the ServiceBase class (you will need to add a reference to System.ServiceProcess).</p>
+<p>To create our own service, we just create a sub class and add our own logic:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="kw">public</span> <span class="kw">class</span> ServiceHost : ServiceBase {
+    <span class="kw">private</span> <span class="kw">readonly</span> TownCrier TownCrier;
+
+    <span class="kw">public</span> <span class="fu">ServiceHost</span>(TownCrier crier) {
+        TownCrier = crier;
+    }
+
+    <span class="kw">protected</span> <span class="kw">override</span> <span class="dt">void</span> <span class="fu">OnStart</span>(<span class="dt">string</span>[] args) {
+        TownCrier.<span class="fu">Start</span>();
+    }
+
+    <span class="kw">protected</span> <span class="kw">override</span> <span class="dt">void</span> <span class="fu">OnStop</span>() {
+        TownCrier.<span class="fu">Stop</span>();
+    }
+}</code></pre></div>
+<p>Then modify our main method to run the host:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="kw">static</span> <span class="dt">void</span> <span class="fu">Main</span>(<span class="dt">string</span>[] args) {
+    <span class="dt">var</span> crier = <span class="kw">new</span> <span class="fu">TownCrier</span>();
+    System.<span class="fu">ServiceProcess</span>.<span class="fu">ServiceBase</span>.<span class="fu">Run</span>(<span class="kw">new</span> <span class="fu">ServiceHost</span>(crier));
+}</code></pre></div>
+<p>If you run this, you'll see an error dialog displayed. This is because services cannot be run from a normal application.</p>
+<p>To handle this, we need to add a check to set what environment we're running in. This can be done with the System.Environment.UserInteractive property. If this is true, it means we are running the app as a user, false means it is running as a service.</p>
+<p>The main method then becomes a combination of the previous versions:</p>
+<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="kw">static</span> <span class="dt">void</span> <span class="fu">Main</span>(<span class="dt">string</span>[] args) {
+    <span class="dt">var</span> crier = <span class="kw">new</span> <span class="fu">TownCrier</span>();
+    <span class="kw">if</span> (System.<span class="fu">Environment</span>.<span class="fu">UserInteractive</span>) {
+        crier.<span class="fu">Start</span>();
+        System.<span class="fu">Console</span>.<span class="fu">WriteLine</span>(<span class="st">&quot;press any key to quit&quot;</span>);
+        System.<span class="fu">Console</span>.<span class="fu">Read</span>();
+        crier.<span class="fu">Stop</span>();
+    } <span class="kw">else</span> {
+        System.<span class="fu">ServiceProcess</span>.<span class="fu">ServiceBase</span>.<span class="fu">Run</span>(<span class="kw">new</span> <span class="fu">ServiceHost</span>(crier));
+    }
+}</code></pre></div>
+<p>This way, when you run the app normally, or debug it, it behaves as a normal console app, but it can also now be run as a service. Let's create the service.</p>
+<h2 id="create-a-service">Create a Service</h2>
+<p>The sc tool is the one to use when dealing with windows services. It can be used to list create, start, stop and delete them.</p>
+<p>To create and start the service, open up a command prompt (with admin privileges) and enter these commands:</p>
+<pre><code>sc create TownCrier binpath= c:\path\to\bin\Debug\TownCrier.exe
+sc start TownCrier</code></pre>
+<p>You can verify it's running with this command:</p>
+<pre><code>sc query TownCrier</code></pre>
+<p>And that's all there is to it.</p>
+</main>
+</body>
+</html>

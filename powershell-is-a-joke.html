@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Powershell is a Joke</title>
+</head>
+<body>
+<header>
+	<h1>Powershell is a Joke</h1>
+</header>
+<main>
+<p>Powershell is a joke, at least as far as build systems are concerned. The concepts behind it sound great, it's billed as the one true scripting language for everything windows, but it falls flat on it's face in the real world.</p>
+<p>I've spent a couple of days trying to setup a rather simple build. The requirements for this build are about as simple as you could hope for, compile the app, prepare the deployment, twiddle the web config and finish with an xcopy deploy.</p>
+<p>Should be simple right? The following is a chronicle of my exasperation, with the occasional nant snippet for comparison.</p>
+<h1 id="clean-and-init">Clean and Init</h1>
+<p>Managing the build directory is the &quot;hello world&quot; of creating a build. Just creating the build directory lead to the first gotcha:</p>
+<pre><code>New-Item .\build -type directory</code></pre>
+<p>This works fine the first time, but subsequent builds will fail because the directory exists. The force parameter is needed:</p>
+<pre><code>New-Item .\build -type directory -force</code></pre>
+<p>Apparently you have to <em>force</em> powershell to <em>not</em> create a new directory. When I create a directory, I just want to make sure it's there. Failing on an existing directory is not a sensible default. How does nant do it:</p>
+<pre><code>&lt;mkdir dir=&quot;build&quot; /&gt;</code></pre>
+<p>Much less cryptic. Let's move onto clean, surely an advanced scripting language can delete a directory right?</p>
+<pre><code>Remove-Item -path .\build\</code></pre>
+<p>Nope this prompts the user, exactly the sort of interactivity I don't want. I have to tell it to delete all the files first:</p>
+<pre><code>Remove-Item -path .\build\  -Include * -Recurse</code></pre>
+<p>This is the best we can do and it still has a few caveats. It will fail if the directory doesn't exist. It will also fail if explorer is open in one of the directories. It will fail the first time anyway, it will delete all files and leave the directories. The second time it will work, the third time it will fail because the directory is missing. Not the sort of consistency you want in your build system. How does nant do it?</p>
+<pre><code>&lt;delete dir=&quot;build&quot; /&gt;</code></pre>
+<p>Always works, doesn't fail if the directory is missing.</p>
+<h1 id="copying-files">Copying Files</h1>
+<p>So it's not great at directories, how does it handle the next common task, copying files?</p>
+<pre><code>Copy-Item .\Rtg.AssetManagement.Web\* .\build\web -recurse -force</code></pre>
+<p>So far so good, though defaulting to recursing and overwriting existing files would make more sense in a build system. What if I only want to exclude .html files?</p>
+<pre><code>Copy-Item .\src\* .\build\ -recurse -force -Include &quot;.html&quot;</code></pre>
+<p>Kind of, it only copies .html files in the base directory. Likewise, exclude will only filter on the base directory:</p>
+<pre><code>Copy-Item .\src\* .\build\ -recurse -force -Exclude &quot;.html&quot;</code></pre>
+<p>Anything &quot;advanced&quot; requires getting a bit complicated (not my code, one I found online):</p>
+<div class="sourceCode"><pre class="sourceCode ps"><code class="sourceCode postscript">$exclude = @<span class="st">(&quot;main.js&quot;)</span>
+$excludeMatch = @<span class="st">(&quot;app1&quot;, &quot;app2&quot;, &quot;app3&quot;)</span>
+[regex] $excludeMatchRegEx = ‘<span class="st">(?i)</span>‘ + <span class="st">(($excludeMatch |foreach {[regex]::escape($_)</span>}) –join “|”) + ‘’
+<span class="kw">Get</span>-ChildItem -Path $from -Recurse -Exclude $exclude |
+  <span class="kw">where</span> { $excludeMatch -<span class="kw">eq</span> $null -<span class="kw">or</span> $_.FullName.Replace<span class="st">($from, &quot;&quot;)</span> -notmatch $excludeMatchRegEx} |
+      <span class="kw">Copy</span>-Item -Destination {
+          <span class="kw">if</span> <span class="st">($_.PSIsContainer)</span> {
+            <span class="kw">Join</span>-Path $to $_.Parent.FullName.Substring<span class="st">($from.length)</span>
+          } else {
+            <span class="kw">Join</span>-Path $to $_.FullName.Substring<span class="st">($from.length)</span>
+          }
+        } -Force -Exclude $exclude</code></pre></div>
+<p>Quite frankly, I don't understand powershell enough to tell you what this is doing. It is extremely obfuscated though, especially compared to the nant equivalent:</p>
+<div class="sourceCode"><pre class="sourceCode xml"><code class="sourceCode xml"><span class="kw">&lt;copy</span><span class="ot"> todir=</span><span class="st">&quot;build&quot;</span><span class="kw">&gt;</span>
+  <span class="kw">&lt;fileset</span><span class="ot"> basedir=</span><span class="st">&quot;src&quot;</span><span class="kw">&gt;</span>
+    <span class="kw">&lt;include</span><span class="ot"> name=</span><span class="st">&quot;*.html&quot;</span> <span class="kw">/&gt;</span>
+  <span class="kw">&lt;/fileset&gt;</span>
+<span class="kw">&lt;/copy&gt;</span></code></pre></div>
+<p>The real kicker is that the complexity of the nant script stays relatively flat as well, multiple base directories, complicated include/exclude functionality, It all stays simple and understandable. The powershell equivalent quickly ramps up in complexity.</p>
+<h1 id="not-built-for-purpose">Not Built for Purpose</h1>
+<p>Is powershell a dud? For build purposes I would say yes. It's overly complicated, even for simple tasks, and the default behavior just does not do what I want. Compared to nant it is downright cryptic.</p>
+<p>I can see it's usefulness, I can see why the defaults are the way they are. I can see how sys admins might make good use of it. I can see how exposing powershell endpoints to my apps could make administration easier.</p>
+<p>It is terrible for building software though.</p>
+</main>
+</body>
+</html>

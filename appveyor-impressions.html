@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Appveyor Impressions</title>
+</head>
+<body>
+<header>
+	<h1>Appveyor Impressions</h1>
+</header>
+<main>
+<p>So I wanted to setup a CI process for AAATest. I don't have a server lying around, so I thought I'd give this newfangled cloud CI a try. Technically I do have a machine lying around that I could use, but it's on the other side of the room and I can reach the cloud from here. The cloud CI of choice was <a href="http://www.appveyor.com/">Appveyor</a>, which seemed like the most .net compatible one.</p>
+<h2 id="first-impressions">First Impressions</h2>
+<p>My first impression wasn't great. My project is setup to use a git submodule for the wiki, which is just how github works. I created a project file to hold the documentation and the main solution references this. Personally I'd prefer the documentation to exist in the same repo, but that is an issue for another day.</p>
+<p>The UI build, as far as I could tell, did not allow for subrepositories, so straight away I had to resort to the appveyor build tool, configured via a yaml file in the root of the repository. This is when the problems with appveyor became immediately apparent.</p>
+<p>A while ago I wrote about <a href="http://proactivelylazy.blogspot.com.au/2011/06/practical-ms-build-avoiding-spaghetti.html">avoiding spaghetti builds</a>. Appveyor violates every one of these rules. I went into detail on the biggest issues below.</p>
+<h2 id="whos-the-boss">Who's the Boss?</h2>
+<p>Even Abed would be confused by this. Does the source contain the build or does the build control the source? It seems to be both. The checkout process goes like this:</p>
+<ol style="list-style-type: decimal">
+<li>Appveyor checks out the code.</li>
+<li>Appveyor executes the build found in the repository.</li>
+<li>The build checks out more code.</li>
+</ol>
+<p>There is a circular relationship between the source and the build, bound to end in tears. This circular relationship leads to the next issue.</p>
+<h2 id="nolocal-builds">NoLocal Builds</h2>
+<p>One of the golden rules of a build system is that it has to be able to run locally. Without this you can't try a change without committing it. If the build takes several minutes or more (integration tests, deployments, etc) then your downtime between iterations is just as long, not great for productivity.</p>
+<p>Imagine if you had to commit your code and wait for a cloud service to compile before seeing any errors. This is essentially what appveyor forces upon your build.</p>
+<h2 id="build-configuration-build-process">Build Configuration == Build Process</h2>
+<p>The other major issue is that there is no real way to configure a build. The configuration is either global or tied to a branch. This limits you to a single build process and there are many good reasons to have more than one.</p>
+<p>I generally want to compile and test on every check in, but integration tests take much longer and I'm happy for them to only run as often as possible. I might want performance tests to be compiled in release mode. I might only want the deployment to be run manually, etc.</p>
+<p>These scenarios are impossible with the way configuration is handled by Appveyor.</p>
+<h2 id="what-is-appveyor">What is Appveyor</h2>
+<p>Is it a CI server, competing with team city? Is it a build framework, competing with nant/msbuild? Is it a deployment server, competing with octopus?</p>
+<p>Unfortunately the answer seems to be all three. The only good news is that the CI server is what shows the most promise, which is the only part of it I'm interested in using.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Will it work as a CI server for AAATest? At the moment I think it will, just barely. AAATest is a very simple project, build, test and deploy (nuget) are the only build steps required and I think Appveyor will manage.</p>
+<p>For a more complex project, with complex configuration scenarios? I think you would drive yourself mad. I'm hoping they really focus on the CI server part in future and leave the building and deployment to better tools.</p>
+</main>
+</body>
+</html>
