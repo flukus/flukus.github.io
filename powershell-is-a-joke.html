@@ -33,24 +33,24 @@
 <p>Kind of, it only copies .html files in the base directory. Likewise, exclude will only filter on the base directory:</p>
 <pre><code>Copy-Item .\src\* .\build\ -recurse -force -Exclude &quot;.html&quot;</code></pre>
 <p>Anything &quot;advanced&quot; requires getting a bit complicated (not my code, one I found online):</p>
-<div class="sourceCode"><pre class="sourceCode ps"><code class="sourceCode postscript">$exclude = @<span class="st">(&quot;main.js&quot;)</span>
-$excludeMatch = @<span class="st">(&quot;app1&quot;, &quot;app2&quot;, &quot;app3&quot;)</span>
-[regex] $excludeMatchRegEx = ‘<span class="st">(?i)</span>‘ + <span class="st">(($excludeMatch |foreach {[regex]::escape($_)</span>}) –join “|”) + ‘’
-<span class="kw">Get</span>-ChildItem -Path $from -Recurse -Exclude $exclude |
-  <span class="kw">where</span> { $excludeMatch -<span class="kw">eq</span> $null -<span class="kw">or</span> $_.FullName.Replace<span class="st">($from, &quot;&quot;)</span> -notmatch $excludeMatchRegEx} |
-      <span class="kw">Copy</span>-Item -Destination {
-          <span class="kw">if</span> <span class="st">($_.PSIsContainer)</span> {
-            <span class="kw">Join</span>-Path $to $_.Parent.FullName.Substring<span class="st">($from.length)</span>
+<pre class="ps"><code>$exclude = @(&quot;main.js&quot;)
+$excludeMatch = @(&quot;app1&quot;, &quot;app2&quot;, &quot;app3&quot;)
+[regex] $excludeMatchRegEx = ‘(?i)‘ + (($excludeMatch |foreach {[regex]::escape($_)}) –join “|”) + ‘’
+Get-ChildItem -Path $from -Recurse -Exclude $exclude |
+  where { $excludeMatch -eq $null -or $_.FullName.Replace($from, &quot;&quot;) -notmatch $excludeMatchRegEx} |
+      Copy-Item -Destination {
+          if ($_.PSIsContainer) {
+            Join-Path $to $_.Parent.FullName.Substring($from.length)
           } else {
-            <span class="kw">Join</span>-Path $to $_.FullName.Substring<span class="st">($from.length)</span>
+            Join-Path $to $_.FullName.Substring($from.length)
           }
-        } -Force -Exclude $exclude</code></pre></div>
+        } -Force -Exclude $exclude</code></pre>
 <p>Quite frankly, I don't understand powershell enough to tell you what this is doing. It is extremely obfuscated though, especially compared to the nant equivalent:</p>
-<div class="sourceCode"><pre class="sourceCode xml"><code class="sourceCode xml"><span class="kw">&lt;copy</span><span class="ot"> todir=</span><span class="st">&quot;build&quot;</span><span class="kw">&gt;</span>
-  <span class="kw">&lt;fileset</span><span class="ot"> basedir=</span><span class="st">&quot;src&quot;</span><span class="kw">&gt;</span>
-    <span class="kw">&lt;include</span><span class="ot"> name=</span><span class="st">&quot;*.html&quot;</span> <span class="kw">/&gt;</span>
-  <span class="kw">&lt;/fileset&gt;</span>
-<span class="kw">&lt;/copy&gt;</span></code></pre></div>
+<pre class="xml"><code>&lt;copy todir=&quot;build&quot;&gt;
+  &lt;fileset basedir=&quot;src&quot;&gt;
+    &lt;include name=&quot;*.html&quot; /&gt;
+  &lt;/fileset&gt;
+&lt;/copy&gt;</code></pre>
 <p>The real kicker is that the complexity of the nant script stays relatively flat as well, multiple base directories, complicated include/exclude functionality, It all stays simple and understandable. The powershell equivalent quickly ramps up in complexity.</p>
 <h1 id="not-built-for-purpose">Not Built for Purpose</h1>
 <p>Is powershell a dud? For build purposes I would say yes. It's overly complicated, even for simple tasks, and the default behavior just does not do what I want. Compared to nant it is downright cryptic.</p>

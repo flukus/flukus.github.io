@@ -70,18 +70,18 @@ build: init $(INDEX) $(ALL)</code></pre>
 build/htmlfull/%.html: build/html/%.html
     cat tools/header.html $^ tools/footer.html &gt; $@</code></pre>
 <p>The first target will use pandoc to generate an html from each markdown file, the second will concatenate a generic header and footer. The rest is largely boiler plate and index page generation. I won't go too much into the awk scripts, just the most interesting one for the index:</p>
-<div class="sourceCode"><pre class="sourceCode awk"><code class="sourceCode awk"><span class="cf">BEGIN</span> <span class="kw">{</span>
-    <span class="bu">RS</span> <span class="op">=</span> <span class="st">&quot;&quot;</span>
-    <span class="bu">FS</span> <span class="op">=</span> <span class="st">&quot;: |</span><span class="sc">\n</span><span class="st">&quot;</span>
-<span class="kw">}</span>
-<span class="kw">{</span>
-    <span class="kw">for</span> (i <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> i <span class="op">&lt;</span> <span class="bu">NF</span><span class="op">;</span> i <span class="op">+=</span><span class="dv">2</span>)<span class="kw">{</span>
-            entry[<span class="dt">$i</span>] <span class="op">=</span> $(i<span class="op">+</span><span class="dv">1</span>)
-    <span class="kw">}</span>
-    <span class="kw">if</span> (<span class="st">&quot;published&quot;</span> <span class="kw">in</span> entry) <span class="kw">{</span>
-        <span class="kw">print</span> <span class="st">&quot;[&quot;</span> entry[<span class="st">&quot;title&quot;</span>] <span class="st">&quot;](&quot;</span> entry[<span class="st">&quot;file&quot;</span>] <span class="st">&quot;): &quot;</span> entry[<span class="st">&quot;description&quot;</span>] <span class="st">&quot;</span><span class="sc">\n\n</span><span class="st">&quot;</span>
-    <span class="kw">}</span>
-<span class="kw">}</span></code></pre></div>
+<pre class="awk"><code>BEGIN {
+    RS = &quot;&quot;
+    FS = &quot;: |\n&quot;
+}
+{
+    for (i = 1; i &lt; NF; i +=2){
+            entry[$i] = $(i+1)
+    }
+    if (&quot;published&quot; in entry) {
+        print &quot;[&quot; entry[&quot;title&quot;] &quot;](&quot; entry[&quot;file&quot;] &quot;): &quot; entry[&quot;description&quot;] &quot;\n\n&quot;
+    }
+}</code></pre>
 <p>The field separator is the most interesting thing here, it can be a colon or a new line and an empty line is used for the result separator. From there a dictionary is built for each result in the index and a markdown paragraph is printed out.</p>
 <h2 id="whats-left">What's Left</h2>
 <p>If you're looking at the blog around the time of this article being published then it's obviously very bare bones. The biggest features I intend to add soon are the ability to embed images and a mechanism to make us of the tags. The styling is another matter. I have some plans in mind that I intend to reveal in a future blog post.</p>

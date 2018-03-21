@@ -15,7 +15,7 @@
 <p>A while ago I wrote about <a href="http://proactivelylazy.blogspot.com.au/2011/06/practical-ms-build-avoiding-spaghetti.html">avoiding spaghetti builds</a>. Appveyor violates every one of these rules. I went into detail on the biggest issues below.</p>
 <h2 id="whos-the-boss">Who's the Boss?</h2>
 <p>Even Abed would be confused by this. Does the source contain the build or does the build control the source? It seems to be both. The checkout process goes like this:</p>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li>Appveyor checks out the code.</li>
 <li>Appveyor executes the build found in the repository.</li>
 <li>The build checks out more code.</li>

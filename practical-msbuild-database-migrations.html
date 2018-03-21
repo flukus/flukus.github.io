@@ -25,20 +25,20 @@
 </ul>
 <h2 id="step-1---backup-delete-restore-obfuscate">Step 1 - Backup, Delete, Restore, Obfuscate</h2>
 <p>The first few requirements are basically &quot;filling in the gaps&quot;, handling the tasks that Fluent Migrator doesn't deal with. Never the less they are an important part of the overall process. In these examples I will be using Sqlite because it's simple, file based nature makes it easy to follow the examples without getting lost in the details. Here are the important bits of the database.build file (I'll post the whole file at the end), this is created with the same techniques I outlined <a href="2011_04_22_Practical-MSBuild---Flexible-Configuration.md">here</a>:</p>
-<div class="sourceCode"><pre class="sourceCode xml"><code class="sourceCode xml"><span class="kw">&lt;Target</span><span class="ot"> Name=</span><span class="st">&quot;dbCreate&quot;</span> <span class="kw">&gt;</span>
-  <span class="co">&lt;!-- SqlLite won&#39;t actually create the file because it is an empty database but it is neccessary with other databases --&gt;</span>
-  <span class="kw">&lt;Exec</span><span class="ot"> Command=</span><span class="st">&quot;$(dbSqlitePath)\Sqlite3.exe $(dbPath)\$(dbName) &quot;</span> <span class="kw">/&gt;</span>
-<span class="kw">&lt;/Target&gt;</span>
-<span class="kw">&lt;Target</span><span class="ot"> Name=</span><span class="st">&quot;dbBackup&quot;</span> <span class="kw">&gt;</span>
-  <span class="kw">&lt;Copy</span><span class="ot"> SourceFiles=</span><span class="st">&quot;$(dbPath)\$(dbName)&quot;</span><span class="ot"> DestinationFiles=</span><span class="st">&quot;$(dbBackupPath)\$(dbBackupName)&quot;</span> <span class="kw">/&gt;</span>
-<span class="kw">&lt;/Target&gt;</span>
-<span class="kw">&lt;Target</span><span class="ot"> Name=</span><span class="st">&quot;dbRestore&quot;</span> <span class="kw">&gt;</span>
-  <span class="kw">&lt;Copy</span><span class="ot"> SourceFiles=</span><span class="st">&quot;$(dbRestoreSource)&quot;</span><span class="ot"> DestinationFiles=</span><span class="st">&quot;$(dbPath)\$(dbName)&quot;</span> <span class="kw">/&gt;</span>
-<span class="kw">&lt;/Target&gt;</span>
-<span class="kw">&lt;Target</span><span class="ot"> Name=</span><span class="st">&quot;dbDelete&quot;</span> <span class="kw">&gt;</span>
-  <span class="kw">&lt;Delete</span><span class="ot"> Files=</span><span class="st">&quot;$(dbPath)\$(dbName)&quot;</span> <span class="kw">/&gt;</span>
-<span class="kw">&lt;/Target&gt;</span>
-<span class="kw">&lt;Target</span><span class="ot"> Name=</span><span class="st">&quot;dbObfuscate&quot;</span><span class="kw">/&gt;</span></code></pre></div>
+<pre class="xml"><code>&lt;Target Name=&quot;dbCreate&quot; &gt;
+  &lt;!-- SqlLite won&#39;t actually create the file because it is an empty database but it is neccessary with other databases --&gt;
+  &lt;Exec Command=&quot;$(dbSqlitePath)\Sqlite3.exe $(dbPath)\$(dbName) &quot; /&gt;
+&lt;/Target&gt;
+&lt;Target Name=&quot;dbBackup&quot; &gt;
+  &lt;Copy SourceFiles=&quot;$(dbPath)\$(dbName)&quot; DestinationFiles=&quot;$(dbBackupPath)\$(dbBackupName)&quot; /&gt;
+&lt;/Target&gt;
+&lt;Target Name=&quot;dbRestore&quot; &gt;
+  &lt;Copy SourceFiles=&quot;$(dbRestoreSource)&quot; DestinationFiles=&quot;$(dbPath)\$(dbName)&quot; /&gt;
+&lt;/Target&gt;
+&lt;Target Name=&quot;dbDelete&quot; &gt;
+  &lt;Delete Files=&quot;$(dbPath)\$(dbName)&quot; /&gt;
+&lt;/Target&gt;
+&lt;Target Name=&quot;dbObfuscate&quot;/&gt;</code></pre>
 <p>Backup and delete should be fairly self explanatory but restore needs a bit more explanation. I've found it more useful to start from a &quot;known good&quot; version of the database rather than starting from scratch every time. For this I strongly favor using backups from production databases. This gives us much more realistic data to work with when we're developing, quantatively and qualitatively. Failing that, a database with somewhat realistic looking test data would do.</p>
 <p>A pleasant side effect of using real production data is that, by the time a release comes around, we have run our data migrations dozens/hundreds/thousands of times. This will give much more confidence with the process and make releases much less stressful. An emergency patch can also be tested and verified using much the same process as a full release (because it's so quick and easy), so no more cowboy live patches.</p>
 <p>Obviously if we have real data it may need obfuscating due to any number of privacy issues that could pop up. Security on developer workstations probably isn't as thorough as it is on the server and we don't want people taking sensitive data out of the office. However, I have purposely left the task empty, simply because it will vary so much from project to project.</p>
@@ -47,47 +47,47 @@
 <p>TODO: link images http://4.bp.blogspot.com/-OkcjXN6YYeg/TcSWGgd-tDI/AAAAAAAAAA4/2Slq03DFriQ/s1600/pms_migrations.png http://4.bp.blogspot.com/-OkcjXN6YYeg/TcSWGgd-tDI/AAAAAAAAAA4/2Slq03DFriQ/s320/pms_migrations.png</p>
 <p>As you can see each revision will get it's own folder, sooner or later you will have enough migrations to warrant this. The other thing of note is that each version has a data and structure folder. The structure folder will contain the bread and butter of Fluent Migrator, adding/removing tables and columns. The data folder exists to make it easier to find migrations much create/update/delete any reference data that our applications will inevitably have.</p>
 <p>Finally some actual code. This example is a simple migration that creates a products table with a name, description and primary key:</p>
-<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs">[<span class="fu">Migration</span>(<span class="dv">0101201104301422</span>)]
-<span class="kw">public</span> <span class="kw">class</span> _01_01_2011_04_30_14_22_AddProductTable : Migration {
-  <span class="kw">public</span> <span class="kw">override</span> <span class="dt">void</span> <span class="fu">Up</span>() {
-    Create.<span class="fu">Table</span>(<span class="st">&quot;products&quot;</span>)
-      .<span class="fu">WithColumn</span>(<span class="st">&quot;product&quot;</span>).<span class="fu">AsInt32</span>().<span class="fu">PrimaryKey</span>().<span class="fu">Identity</span>()
-      .<span class="fu">WithColumn</span>(<span class="st">&quot;name&quot;</span>).<span class="fu">AsString</span>(<span class="dv">128</span>).<span class="fu">NotNullable</span>()
-      .<span class="fu">WithColumn</span>(<span class="st">&quot;description&quot;</span>).<span class="fu">AsString</span>(<span class="dt">int</span>.<span class="fu">MaxValue</span>).<span class="fu">NotNullable</span>();
+<pre class="cs"><code>[Migration(0101201104301422)]
+public class _01_01_2011_04_30_14_22_AddProductTable : Migration {
+  public override void Up() {
+    Create.Table(&quot;products&quot;)
+      .WithColumn(&quot;product&quot;).AsInt32().PrimaryKey().Identity()
+      .WithColumn(&quot;name&quot;).AsString(128).NotNullable()
+      .WithColumn(&quot;description&quot;).AsString(int.MaxValue).NotNullable();
   }
 
-  <span class="kw">public</span> <span class="kw">override</span> <span class="dt">void</span> <span class="fu">Down</span>() {
-    Delete.<span class="fu">Table</span>(<span class="st">&quot;products&quot;</span>);
+  public override void Down() {
+    Delete.Table(&quot;products&quot;);
   }
-}</code></pre></div>
+}</code></pre>
 <p>The interesting thing here is the version number which is is probably the least intuitive part of this article. The convention used is: {major}{minor}{year}{month}{day}{hour}{minute}. Major/Minor are our product versions, this ensures that migrations are executed in the order the product is developed. This is particularly important if a project has long running branches with features and bug fixes. The rest is the time the migration is created, hours and minutes simply ensure (almost always) that there are no collisions with other developers writing migrations concurrently.</p>
 <p>This numbering scheme will save much frustration at merge time.</p>
 <h2 id="step-3---running-migrations">Step 3 - Running Migrations</h2>
 <p>At the time of writing the msbuild task isn't working with the version of Fluent Migrator I'm using, it also isn't documented so I'll be using using the exec task coupled with the Fluent Migrator console runner. One other thing to remember is that Fluent Migrator is currently a c# 3.5 project so all migrations projects need to be as well. Here is the MS Build task to execute the migrations:</p>
-<div class="sourceCode"><pre class="sourceCode xml"><code class="sourceCode xml"><span class="kw">&lt;Target</span><span class="ot"> Name=</span><span class="st">&quot;dbMigrate&quot;</span><span class="ot"> DependsOnTargets=</span><span class="st">&quot;compile&quot;</span> <span class="kw">&gt;</span>
-  <span class="kw">&lt;Exec</span><span class="ot"> Command=</span><span class="st">&quot;$(dbMigratorPath)\Migrate.exe --target=src\app\PMSBuild.Migrations\bin\debug\PMSBuild.Migrations.dll --db=sqlite --c=</span><span class="dv">&amp;quot;</span><span class="st">Data Source=$(dbPath)\$(dbName);Version=3;</span><span class="dv">&amp;quot;</span><span class="st"> --verbose=true --version=$(dbVersion)&quot;</span> <span class="kw">/&gt;</span>
-<span class="kw">&lt;/Target&gt;</span></code></pre></div>
+<pre class="xml"><code>&lt;Target Name=&quot;dbMigrate&quot; DependsOnTargets=&quot;compile&quot; &gt;
+  &lt;Exec Command=&quot;$(dbMigratorPath)\Migrate.exe --target=src\app\PMSBuild.Migrations\bin\debug\PMSBuild.Migrations.dll --db=sqlite --c=&amp;quot;Data Source=$(dbPath)\$(dbName);Version=3;&amp;quot; --verbose=true --version=$(dbVersion)&quot; /&gt;
+&lt;/Target&gt;</code></pre>
 <p>There are quite a few properties here but it's the dbVersion property which is the most important. The default is set (at the top of the script) to 0, which will run all migrations. Because the precedence rules I outlined in my last article are used (<a href="#">Practical MS Build - Flexible Configuration</a>), it is easy to migrate to a specific version if needed. From the command line simply specify a new value for the property:</p>
 <pre><code>msbuild project.build /target:dbMigrate /property:dbVersion=0101201104301422</code></pre>
 <h2 id="step-4---migrating-data">Step 4 - Migrating Data</h2>
 <p>One of the most cited reasons for dismissing Fluent Migrator is that it doesn't handle data migrations. This is throwing the baby out with the bath water. It is true that Fluent Migrator doesn't handle this but it does provide an excellent framework to execute and track such migrations.</p>
 <p>Because we're <a href="http://www.codinghorror.com/blog/2004/10/a-pragmatic-quick-reference.html">pragmatic programmers</a> that use the right tool for the job, we'll want to modify our data with a language made for just that: SQL. Fortunately Fluent Migrator allows us to execute arbitrary sql, we just need a little bit of organization and self discipline.</p>
 <p>Lets say a migration needs to add a meta column to the products table created above and that we need to populate it with the description, to serve as a place holder until a real person edits it. The first part is easy, just create another migration which adds the column:</p>
-<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs">[<span class="fu">Migration</span>(<span class="dv">0101201105021944</span>)]
-<span class="kw">public</span> <span class="kw">class</span> _01_01_2011_05_02_19_44_AddMetaColumnToProduct : Migration {
-  <span class="kw">public</span> <span class="kw">override</span> <span class="dt">void</span> <span class="fu">Up</span>() {
-    Create.<span class="fu">Column</span>(<span class="st">&quot;meta&quot;</span>).<span class="fu">OnTable</span>(<span class="st">&quot;products&quot;</span>)
-      .<span class="fu">AsString</span>(<span class="dt">int</span>.<span class="fu">MaxValue</span>)
-      .<span class="fu">NotNullable</span>()
-      .<span class="fu">WithDefaultValue</span>(<span class="st">&quot;&quot;</span>);
+<pre class="cs"><code>[Migration(0101201105021944)]
+public class _01_01_2011_05_02_19_44_AddMetaColumnToProduct : Migration {
+  public override void Up() {
+    Create.Column(&quot;meta&quot;).OnTable(&quot;products&quot;)
+      .AsString(int.MaxValue)
+      .NotNullable()
+      .WithDefaultValue(&quot;&quot;);
     }
-  <span class="kw">public</span> <span class="kw">override</span> <span class="dt">void</span> <span class="fu">Down</span>() {
-    Delete.<span class="fu">Column</span>(<span class="st">&quot;meta&quot;</span>).<span class="fu">FromTable</span>(<span class="st">&quot;products&quot;</span>);
+  public override void Down() {
+    Delete.Column(&quot;meta&quot;).FromTable(&quot;products&quot;);
   }
-}</code></pre></div>
+}</code></pre>
 <p>Next we need to create an sql file to hold our script. Generally I stick to the same naming conventions used for the migration classes so I created 01_01_2011_05_02_19_44_PopulateMetaOnMigrations.sql in the same directory as the migration classes:</p>
-<div class="sourceCode"><pre class="sourceCode sql"><code class="sourceCode sql"><span class="kw">UPDATE</span> products
-<span class="kw">SET</span> meta = [description]</code></pre></div>
+<pre class="sql"><code>UPDATE products
+SET meta = [description]</code></pre>
 <p>This is about as straight forward as sql scripts get. Next I create a resource (0101_SqlMigrations.resx) file in the version directory and add the above script as a file resource. This compiles the script into the dll which simplifies things when we need to use our migrations externally (installers etc).</p>
 <p>The last thing to do is modify the migration class above with a line to execute the file:</p>
 <pre class="c#"><code>public override void Up() {
@@ -97,57 +97,57 @@
 <h2 id="wrapping-up">Wrapping Up</h2>
 <p>A fast, flexible and complete solution to manage databases. With this approach you will never again will you fear long running branches. Never gain have to develop against a database being modified by others. Most importantly, never again dread database upgrades at release time. Once you get used to a solution like this going back to anything else will seem slow and archaic and error prone.</p>
 <p>As promised here is the complete database.build script:</p>
-<div class="sourceCode"><pre class="sourceCode xml"><code class="sourceCode xml"><span class="kw">&lt;xml</span><span class="ot"> version=</span><span class="st">&quot;1.0&quot;</span><span class="ot"> encoding=</span><span class="st">&quot;utf-8&quot;</span><span class="er">?</span> <span class="kw">/&gt;</span>
-<span class="kw">&lt;Project</span><span class="ot"> xmlns=</span><span class="st">&quot;http://schemas.microsoft.com/developer/msbuild/2003&quot;</span><span class="kw">&gt;</span>
+<pre class="xml"><code>&lt;xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;? /&gt;
+&lt;Project xmlns=&quot;http://schemas.microsoft.com/developer/msbuild/2003&quot;&gt;
 
-  <span class="kw">&lt;PropertyGroup&gt;</span>
-   <span class="kw">&lt;dbName</span><span class="ot"> Condition=</span><span class="st">&quot;&#39;$(dbName)&#39; == &#39;&#39;&quot;</span><span class="kw">&gt;</span>Test.db<span class="kw">&lt;/dbName&gt;</span>
-    <span class="kw">&lt;dbPath</span><span class="ot"> Condition=</span><span class="st">&quot;&#39;$(dbPath)&#39; == &#39;&#39;&quot;</span><span class="kw">&gt;</span>database<span class="kw">&lt;/dbPath&gt;</span>
-    <span class="kw">&lt;dbSqlitePath</span><span class="ot"> Condition=</span><span class="st">&quot;&#39;$(dbSqlitePath)&#39; == &#39;&#39;&quot;</span><span class="kw">&gt;</span>c:/Program Files/Sqlite<span class="kw">&lt;/dbSqlitePath&gt;</span>
-    <span class="kw">&lt;dbBackupPath</span><span class="ot"> Condition=</span><span class="st">&quot;&#39;$(dbBackupPath)&#39; == &#39;&#39;&quot;</span><span class="kw">&gt;</span>d:\databases\backups<span class="kw">&lt;/dbBackupPath&gt;</span>
-    <span class="kw">&lt;dbBackupName</span><span class="ot"> Condition=</span><span class="st">&quot;&#39;$(dbBackupName)&#39; == &#39;&#39;&quot;</span><span class="kw">&gt;</span>Test_Backup.db<span class="kw">&lt;/dbBackupName&gt;</span>
-    <span class="kw">&lt;dbRestoreSource</span><span class="ot"> Condition=</span><span class="st">&quot;&#39;$(dbRestoreSource)&#39; == &#39;&#39;&quot;</span><span class="kw">&gt;</span>d:\databases\backups\Prod_2011_04_30.db<span class="kw">&lt;/dbRestoreSource&gt;</span>
-    <span class="kw">&lt;dbMigratorPath</span><span class="ot"> Condition=</span><span class="st">&quot;&#39;$(dbMigratorPath)&#39; == &#39;&#39;&quot;</span> <span class="kw">&gt;</span>packages\FluentMigrator.0.9.0.0\tools<span class="kw">&lt;/dbMigratorPath&gt;</span>
-    <span class="kw">&lt;dbVersion</span><span class="ot"> Condition=</span><span class="st">&quot;&#39;$(dbVersion)&#39; == &#39;&#39;&quot;</span> <span class="kw">&gt;</span>0<span class="kw">&lt;/dbVersion&gt;</span>
-  <span class="kw">&lt;/PropertyGroup&gt;</span>
+  &lt;PropertyGroup&gt;
+   &lt;dbName Condition=&quot;&#39;$(dbName)&#39; == &#39;&#39;&quot;&gt;Test.db&lt;/dbName&gt;
+    &lt;dbPath Condition=&quot;&#39;$(dbPath)&#39; == &#39;&#39;&quot;&gt;database&lt;/dbPath&gt;
+    &lt;dbSqlitePath Condition=&quot;&#39;$(dbSqlitePath)&#39; == &#39;&#39;&quot;&gt;c:/Program Files/Sqlite&lt;/dbSqlitePath&gt;
+    &lt;dbBackupPath Condition=&quot;&#39;$(dbBackupPath)&#39; == &#39;&#39;&quot;&gt;d:\databases\backups&lt;/dbBackupPath&gt;
+    &lt;dbBackupName Condition=&quot;&#39;$(dbBackupName)&#39; == &#39;&#39;&quot;&gt;Test_Backup.db&lt;/dbBackupName&gt;
+    &lt;dbRestoreSource Condition=&quot;&#39;$(dbRestoreSource)&#39; == &#39;&#39;&quot;&gt;d:\databases\backups\Prod_2011_04_30.db&lt;/dbRestoreSource&gt;
+    &lt;dbMigratorPath Condition=&quot;&#39;$(dbMigratorPath)&#39; == &#39;&#39;&quot; &gt;packages\FluentMigrator.0.9.0.0\tools&lt;/dbMigratorPath&gt;
+    &lt;dbVersion Condition=&quot;&#39;$(dbVersion)&#39; == &#39;&#39;&quot; &gt;0&lt;/dbVersion&gt;
+  &lt;/PropertyGroup&gt;
 
-  <span class="kw">&lt;Target</span><span class="ot"> Name=</span><span class="st">&quot;dbEcho&quot;</span> <span class="kw">&gt;</span>
-    <span class="kw">&lt;Message</span><span class="ot"> Text=</span><span class="st">&quot;dbName: $(dbName)&quot;</span> <span class="kw">/&gt;</span>
-    <span class="kw">&lt;Message</span><span class="ot"> Text=</span><span class="st">&quot;dbPath: $(dbPath)&quot;</span> <span class="kw">/&gt;</span>
-    <span class="kw">&lt;Message</span><span class="ot"> Text=</span><span class="st">&quot;dbSqlitePath: $(dbSqlitePath)&quot;</span> <span class="kw">/&gt;</span>
-    <span class="kw">&lt;Message</span><span class="ot"> Text=</span><span class="st">&quot;dbBackupPath: $(dbBackupPath)&quot;</span> <span class="kw">/&gt;</span>
-    <span class="kw">&lt;Message</span><span class="ot"> Text=</span><span class="st">&quot;dbBackupName: $(dbBackupName)&quot;</span> <span class="kw">/&gt;</span>
-    <span class="kw">&lt;Message</span><span class="ot"> Text=</span><span class="st">&quot;dbRestoreSource: $(dbRestoreSource)&quot;</span> <span class="kw">/&gt;</span>
-    <span class="kw">&lt;Message</span><span class="ot"> Text=</span><span class="st">&quot;dbMigratorPath: $(dbMigratorPath)&quot;</span> <span class="kw">/&gt;</span>
-  <span class="kw">&lt;/Target&gt;</span>
+  &lt;Target Name=&quot;dbEcho&quot; &gt;
+    &lt;Message Text=&quot;dbName: $(dbName)&quot; /&gt;
+    &lt;Message Text=&quot;dbPath: $(dbPath)&quot; /&gt;
+    &lt;Message Text=&quot;dbSqlitePath: $(dbSqlitePath)&quot; /&gt;
+    &lt;Message Text=&quot;dbBackupPath: $(dbBackupPath)&quot; /&gt;
+    &lt;Message Text=&quot;dbBackupName: $(dbBackupName)&quot; /&gt;
+    &lt;Message Text=&quot;dbRestoreSource: $(dbRestoreSource)&quot; /&gt;
+    &lt;Message Text=&quot;dbMigratorPath: $(dbMigratorPath)&quot; /&gt;
+  &lt;/Target&gt;
 
 
-  <span class="co">&lt;!--&lt;UsingTask TaskName=&quot;FluentMigrator.MSBuild.Migrate&quot; AssemblyFile=&quot;lib\FluentMigrator\FluentMigrator.MSBuild.dll&quot;/&gt;--&gt;</span>
+  &lt;!--&lt;UsingTask TaskName=&quot;FluentMigrator.MSBuild.Migrate&quot; AssemblyFile=&quot;lib\FluentMigrator\FluentMigrator.MSBuild.dll&quot;/&gt;--&gt;
 
-  <span class="kw">&lt;Target</span><span class="ot"> Name=</span><span class="st">&quot;dbCreate&quot;</span> <span class="kw">&gt;</span>
-    <span class="co">&lt;!-- This won&#39;t actually create the file because it is an empty database --&gt;</span>
-    <span class="kw">&lt;Exec</span><span class="ot"> Command=</span><span class="st">&quot;$(dbSqlitePath)\Sqlite3.exe $(dbPath)\$(dbName) &quot;</span> <span class="kw">/&gt;</span>
-  <span class="kw">&lt;/Target&gt;</span>
+  &lt;Target Name=&quot;dbCreate&quot; &gt;
+    &lt;!-- This won&#39;t actually create the file because it is an empty database --&gt;
+    &lt;Exec Command=&quot;$(dbSqlitePath)\Sqlite3.exe $(dbPath)\$(dbName) &quot; /&gt;
+  &lt;/Target&gt;
 
-  <span class="kw">&lt;Target</span><span class="ot"> Name=</span><span class="st">&quot;dbBackup&quot;</span> <span class="kw">&gt;</span>
-    <span class="kw">&lt;Copy</span><span class="ot"> SourceFiles=</span><span class="st">&quot;$(dbPath)\$(dbName)&quot;</span><span class="ot"> DestinationFiles=</span><span class="st">&quot;$(dbBackupPath)\$(dbBackupName)&quot;</span> <span class="kw">/&gt;</span>
-  <span class="kw">&lt;/Target&gt;</span>
+  &lt;Target Name=&quot;dbBackup&quot; &gt;
+    &lt;Copy SourceFiles=&quot;$(dbPath)\$(dbName)&quot; DestinationFiles=&quot;$(dbBackupPath)\$(dbBackupName)&quot; /&gt;
+  &lt;/Target&gt;
 
-  <span class="kw">&lt;Target</span><span class="ot"> Name=</span><span class="st">&quot;dbRestore&quot;</span> <span class="kw">&gt;</span>
-    <span class="kw">&lt;Copy</span><span class="ot"> SourceFiles=</span><span class="st">&quot;$(dbRestoreSource)&quot;</span><span class="ot"> DestinationFiles=</span><span class="st">&quot;$(dbPath)\$(dbName)&quot;</span> <span class="kw">/&gt;</span>
-  <span class="kw">&lt;/Target&gt;</span>
+  &lt;Target Name=&quot;dbRestore&quot; &gt;
+    &lt;Copy SourceFiles=&quot;$(dbRestoreSource)&quot; DestinationFiles=&quot;$(dbPath)\$(dbName)&quot; /&gt;
+  &lt;/Target&gt;
 
-  <span class="kw">&lt;Target</span><span class="ot"> Name=</span><span class="st">&quot;dbDelete&quot;</span> <span class="kw">&gt;</span>
-    <span class="kw">&lt;Delete</span><span class="ot"> Files=</span><span class="st">&quot;$(dbPath)\$(dbName)&quot;</span> <span class="kw">/&gt;</span>
-  <span class="kw">&lt;/Target&gt;</span>
+  &lt;Target Name=&quot;dbDelete&quot; &gt;
+    &lt;Delete Files=&quot;$(dbPath)\$(dbName)&quot; /&gt;
+  &lt;/Target&gt;
 
-  <span class="kw">&lt;Target</span><span class="ot"> Name=</span><span class="st">&quot;dbObfuscate&quot;</span><span class="kw">/&gt;</span>
+  &lt;Target Name=&quot;dbObfuscate&quot;/&gt;
 
-  <span class="kw">&lt;Target</span><span class="ot"> Name=</span><span class="st">&quot;dbMigrate&quot;</span><span class="ot"> DependsOnTargets=</span><span class="st">&quot;compile&quot;</span> <span class="kw">&gt;</span>
-    <span class="kw">&lt;Exec</span><span class="ot"> Command=</span><span class="st">&quot;$(dbMigratorPath)\Migrate.exe --target=src\app\PMSBuild.Migrations\bin\debug\PMSBuild.Migrations.dll --db=sqlite --c=</span><span class="dv">&amp;amp;</span><span class="st">amp;quot;Data Source=$(dbPath)\$(dbName);Version=3;</span><span class="dv">&amp;amp;</span><span class="st">amp;quot; --verbose=true --version=$(dbVersion)&quot;</span> <span class="kw">/&gt;</span>
-  <span class="kw">&lt;/Target&gt;</span>
+  &lt;Target Name=&quot;dbMigrate&quot; DependsOnTargets=&quot;compile&quot; &gt;
+    &lt;Exec Command=&quot;$(dbMigratorPath)\Migrate.exe --target=src\app\PMSBuild.Migrations\bin\debug\PMSBuild.Migrations.dll --db=sqlite --c=&amp;amp;amp;quot;Data Source=$(dbPath)\$(dbName);Version=3;&amp;amp;amp;quot; --verbose=true --version=$(dbVersion)&quot; /&gt;
+  &lt;/Target&gt;
 
-<span class="kw">&lt;/Project&gt;</span></code></pre></div>
+&lt;/Project&gt;</code></pre>
 </main>
 </body>
 </html>

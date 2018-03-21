@@ -13,17 +13,17 @@
 <p>This is what I have found to be an effective approach to juggling these variables, avoiding unnecessary surprises yet still remaining flexible.</p>
 <h2 id="declaring-the-properties">Declaring the Properties</h2>
 <p>First of all, a build script should declare all it's variables near the top. These values should generally be sensible defaults, values that will work for most developers most of the time. I'll get to what the condition attributes are for further down, here is a typical PropertyGroup section:</p>
-<div class="sourceCode"><pre class="sourceCode xml"><code class="sourceCode xml"><span class="kw">&lt;PropertyGroup&gt;</span>
-  <span class="kw">&lt;databaseConnection</span><span class="ot"> Condition=</span><span class="st">&quot;&#39;$(databaseConnection)&#39; == &#39;&#39;&quot;</span><span class="kw">&gt;</span>Data Source=myServerAddress;Initial Catalog=myDataBase;Integrated Security=SSPI;<span class="kw">&lt;/databaseConnection&gt;</span>
-  <span class="kw">&lt;nunitPath</span><span class="ot"> Condition=</span><span class="st">&quot;&#39;$(nunitPath)&#39; == &#39;&#39;&quot;</span><span class="kw">&gt;</span>c:\nunit<span class="kw">&lt;/nunitPath&gt;</span>
-  <span class="kw">&lt;projectVersion</span><span class="ot"> Condition=</span><span class="st">&quot;&#39;$(projectVersion)&#39; == &#39;&#39;&quot;</span><span class="kw">&gt;</span>1.1.0.0<span class="kw">&lt;/projectVersion&gt;</span>
-<span class="kw">&lt;/PropertyGroup&gt;</span></code></pre></div>
+<pre class="xml"><code>&lt;PropertyGroup&gt;
+  &lt;databaseConnection Condition=&quot;&#39;$(databaseConnection)&#39; == &#39;&#39;&quot;&gt;Data Source=myServerAddress;Initial Catalog=myDataBase;Integrated Security=SSPI;&lt;/databaseConnection&gt;
+  &lt;nunitPath Condition=&quot;&#39;$(nunitPath)&#39; == &#39;&#39;&quot;&gt;c:\nunit&lt;/nunitPath&gt;
+  &lt;projectVersion Condition=&quot;&#39;$(projectVersion)&#39; == &#39;&#39;&quot;&gt;1.1.0.0&lt;/projectVersion&gt;
+&lt;/PropertyGroup&gt;</code></pre>
 <p>Next is the echo task. This will probably seem repetitive but we will be overriding these variables from various sources so it's important to have a sanity check, especially when it's running on a build server. The code itself is straight forward:</p>
-<div class="sourceCode"><pre class="sourceCode xml"><code class="sourceCode xml"><span class="kw">&lt;Target</span><span class="ot"> Name=</span><span class="st">&quot;echo&quot;</span><span class="kw">&gt;</span>
-  <span class="kw">&lt;Message</span><span class="ot"> Text=</span><span class="st">&quot;databaseConnection: $(databaseConnection)&quot;</span> <span class="kw">/&gt;</span>
-  <span class="kw">&lt;Message</span><span class="ot"> Text=</span><span class="st">&quot;nunitPath: $(nunitPath)&quot;</span> <span class="kw">/&gt;</span>
-  <span class="kw">&lt;Message</span><span class="ot"> Text=</span><span class="st">&quot;projectVersion: $(projectVersion)&quot;</span> <span class="kw">/&gt;</span>
-<span class="kw">&lt;/Target&gt;</span></code></pre></div>
+<pre class="xml"><code>&lt;Target Name=&quot;echo&quot;&gt;
+  &lt;Message Text=&quot;databaseConnection: $(databaseConnection)&quot; /&gt;
+  &lt;Message Text=&quot;nunitPath: $(nunitPath)&quot; /&gt;
+  &lt;Message Text=&quot;projectVersion: $(projectVersion)&quot; /&gt;
+&lt;/Target&gt;</code></pre>
 <p>To run this script open up the Visual Studio command prompt, cd to the project directory and type:</p>
 <pre><code>msbuild project.build /target:echo</code></pre>
 <p>There are going to be many times when we want to override the default values and this is exactly what the Condition attribute is for. If someone (usually the build server) needed to use a different database it can be overridden from the command line:</p>
@@ -32,13 +32,13 @@
 <h2 id="developer-configuration">Developer Configuration</h2>
 <p>Of course a real world build script could have dozens of properties and typing these into the command line every time would get a bit monotonous. This can be avoided by creating a properties file that will save all our personal settings.</p>
 <p>A properties file (I usually call it local.properties) sits in the root directory (along with the main build file) and is just a special MS Build script the will be imported into the main script. A properties file should never be kept in source control and should be explicitly excluded. Here is what a properties file will look like:</p>
-<div class="sourceCode"><pre class="sourceCode xml"><code class="sourceCode xml"><span class="kw">&lt;Project</span><span class="ot"> xmlns=</span><span class="st">&quot;http://schemas.microsoft.com/developer/msbuild/2003&quot;</span><span class="kw">&gt;</span>
-  <span class="kw">&lt;PropertyGroup&gt;</span>
-    <span class="kw">&lt;nunitPath</span><span class="ot"> Condition=</span><span class="st">&quot;&#39;$(nunitPath)&#39; == &#39;&#39;&quot;</span><span class="kw">&gt;</span>C:\Program Files\nunit<span class="kw">&lt;/nunitPath&gt;</span>
-  <span class="kw">&lt;/PropertyGroup&gt;</span>
-<span class="kw">&lt;/Project&gt;</span></code></pre></div>
+<pre class="xml"><code>&lt;Project xmlns=&quot;http://schemas.microsoft.com/developer/msbuild/2003&quot;&gt;
+  &lt;PropertyGroup&gt;
+    &lt;nunitPath Condition=&quot;&#39;$(nunitPath)&#39; == &#39;&#39;&quot;&gt;C:\Program Files\nunit&lt;/nunitPath&gt;
+  &lt;/PropertyGroup&gt;
+&lt;/Project&gt;</code></pre>
 <p>The first line of the main build script will then have:</p>
-<div class="sourceCode"><pre class="sourceCode xml"><code class="sourceCode xml"><span class="kw">&lt;Import</span><span class="ot"> Project=</span><span class="st">&quot;local.properties&quot;</span><span class="ot"> Condition=</span><span class="st">&quot;Exists(&#39;local.properties&#39;)&quot;</span> <span class="kw">/&gt;</span></code></pre></div>
+<pre class="xml"><code>&lt;Import Project=&quot;local.properties&quot; Condition=&quot;Exists(&#39;local.properties&#39;)&quot; /&gt;</code></pre>
 <p>This will import the properties file if it exists and the properties declared in this file will override those in the main script. In this case the properties file overrides the nunitPath property because this developer installed it to a location that differs from the rest of the team, this is no big deal because he only has to specify it once and never think about it again.</p>
 <p>Now the precedence order is: command line property &gt; properties file property &gt; default property. This is a good rule that will generally suite everyone. A developer with all the defaults will have no configuration yet configuration will be easy for anyone with different needs.</p>
 <p>And that's it, the basis of a flexible, configurable and maintainable build system with MS Build. I intend to write a series of articles on MS Build in the near future as well as a working sample project, as I did with the Frictionless WCF example, so stay tuned.</p>

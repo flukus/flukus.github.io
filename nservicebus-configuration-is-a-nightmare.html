@@ -23,8 +23,8 @@
 <p>The latest version of the tutorials is also completely useless as it uses the WYSIWYG editor, which for some reason won't install in my version of visual studio. Not that I want to use it anyway, I prefer the code first approach, for which there is no up to date documentation.</p>
 <h2 id="what-id-like">What I'd like?</h2>
 <p>I would love an entirely self contained fluent configuration that made it clear what was happening, something like:</p>
-<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs">Configure.<span class="fu">AsPublisher</span>(x =&gt; { x.<span class="fu">Queue</span> = myRavenQueue })
-Configure.<span class="fu">AsSubscriber</span>(x=&gt; { x.<span class="fu">Queue</span> = myRavenQueue })</code></pre></div>
+<pre class="cs"><code>Configure.AsPublisher(x =&gt; { x.Queue = myRavenQueue })
+Configure.AsSubscriber(x=&gt; { x.Queue = myRavenQueue })</code></pre>
 <p>Making it clear what is happening is important, because the current configuration options absolute do not.</p>
 <p>For now I'm not sure what to do. Continue persevering? Hard to do when I have no idea if I'm getting closer or not. Look for alternatives? Maybe. Rhino service bus is nicer but I'm not sure of the future of the project. Avoid it all together? I don't particularly need a service bus right now, but less code, future scalability and built in fault tolerance are all pushing me towards one.</p>
 </main>

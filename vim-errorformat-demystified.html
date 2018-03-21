@@ -34,7 +34,7 @@ set efm+=%Z%m</code></pre>
 <p>The first step to creating an error format is to get the file name and line:</p>
 <pre class="vim"><code>set efm=%.%#\ at\ %.%#\ in\ %f:line\ %l</code></pre>
 <p>This is saying:</p>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li>Find any text (%.%# is a wild card) until we get to &quot; at &quot;.</li>
 <li>Then any text until we get to &quot; in &quot;.</li>
 <li>Then the filename (%f) followed by a colon (:)</li>
@@ -49,7 +49,7 @@ set efm+=%Z%m</code></pre>
 <pre class="vim"><code>set efm=%E%.%#Test\ Failure\ :%.%#
 set efm+=%Z%.%#\ at\ %.%#\ in\ %f:line\ %l</code></pre>
 <p>The second line is mostly the same (note the += at the start). The first line is a format saying the following:</p>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li>Set the multi line flag (%E) if this is a match</li>
 <li>Find any text until we get to &quot;Test Failure : &quot;</li>
 <li>Followed by any text.</li>
@@ -65,7 +65,7 @@ set efm+=%Z%.%#\ at\ %.%#\ in\ %f:line\ %l
 set efm+=%C%.%#[exec]\ %#%m
 set efm+=%C%.%#</code></pre>
 <p>The added third line is saying:</p>
-<ol style="list-style-type: decimal">
+<ol type="1">
 <li>Only apply this if the multi line flag is set (%C)</li>
 <li>Find any text up to [exec]</li>
 <li>Find any space characters</li>

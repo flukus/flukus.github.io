@@ -47,7 +47,7 @@
 }</code></pre>
 <p>The log methods are self explanatory. PublishMessage will publish the message to a message queue. Query<T> will delegate to the CQRS sub system and Map will delegate to automapper.</p>
 <p>The actual specifics will vary tremendously from project to project.</p>
-<h1 id="single-responsibility-principle">Single Responsibility Principle</h1>
+<h2 id="single-responsibility-principle">Single Responsibility Principle</h2>
 <p>It is natural to assume that any implementation of these interfaces will violate the single responsibility principle, that they would be handling many unrelated tasks.</p>
 <p>This is where the facade pattern comes in. An implementation of these interfaces should be a facade only, They should contain no real logic, simply pass arguments to a real implementation.</p>
 <p>They only responsibility of these implementations is to delegate:</p>

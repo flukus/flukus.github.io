@@ -19,7 +19,7 @@ goodbye: hello
     echo goodbye</code></pre>
 <p>This makefile contains two tasks (we'll get to why this is wrong in a bit). There is the hello task and the goodbye task, which depends on the hello task. Dependencies are everything listed after the colon. The other thing to note is that the execution of those tasks is done with standard unix commands. There is no api to learn, no functions (or lack thereof) to limit it's effectiveness as a build tool, just tools that anyone comfortable with unix would know.</p>
 <p>To execute this build script simply go to the directory it's in and execute:</p>
-<div class="sourceCode"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="fu">make</span> hello goodbye</code></pre></div>
+<pre class="sh"><code>make hello goodbye</code></pre>
 <p>This will explicitly execute both tasks. If we wanted to run hello only we could run make with just that argument. Because goodbye depends on hello, executing just goodbye will always execute hello first.</p>
 <p>Now this is where make differs from most build tools. We aren't really defining tasks but outputs, our hello task above is saying that it outputs a file named &quot;hello&quot;. I want to drum this in because it really is the key to understanding make. When we write &quot;hello:&quot; we are telling make that the following instructions will produce a file named &quot;hello&quot;. To demonstrate this, try changing the Makefile:</p>
 <pre class="make"><code>hello:
@@ -80,8 +80,8 @@ $(migrate): $(init) $(src_migrate)
     $(Csc) -out:$(lib) -target:library $(src_migrate)
 build: $(app) $(lib) $(migrate)</code></pre>
 <p>The first tasks here is to produce a version file. This takes a c# template and replaces values using the sed command. The template looks like this:</p>
-<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="kw">using</span> System.<span class="fu">Reflection</span>;
-[assembly:<span class="fu">AssemblyVersion</span>(<span class="st">&quot;${Version}&quot;</span>)]</code></pre></div>
+<pre class="cs"><code>using System.Reflection;
+[assembly:AssemblyVersion(&quot;${Version}&quot;)]</code></pre>
 <p>The string &quot;${Version}&quot; in our template will be replaced with the value of the $(Version) variable. The output will be ./build/Version.cs which will be used when we compile. Again there is a &quot;version&quot; output defined to make it easy to call from the command line.</p>
 <p>The next few outputs are our compilation targets, which just call csc with a list of files to build. The only interesting thing here is that $(app) has a dependency on $(lib) and that they all have a dependency on their source files. This is how an incremental build is defined, This is some of the hidden genius behind make.</p>
 <p>$(lib) will only be executed if any of it's dependencies are newer than itself. This is based on the last modified date of the files, so if none of source files in ./src/lib/ have been modified since the dll was last compiled, nothing will happen. Likewise, $(app) will only execute if any $(src_app) or $(lib) have been modified more recently than $(app). So our changes will cascade, changes to a source file in a library will force $(lib) to rebuild, this will then force $(app) to rebuild.</p>

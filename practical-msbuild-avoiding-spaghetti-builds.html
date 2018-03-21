@@ -10,63 +10,63 @@
 <main>
 <p>A spaghetti build, much like spaghetti code, is a hair pulling experience. Most developers (but not nearly enough) know how to avoid spaghetti code, refactoring, extracting classes and methods from tight loops, removing unexpected consequences. Quit frequently however, these same principles don't get applied to our build scripts. Here I want to show an example of a spaghetti build and then some techniques on how to avoid them.</p>
 <p>Here I put together an example of what I would consider a spaghetti build, regrettably some of this comes straight from the MS Build documentation:</p>
-<div class="sourceCode"><pre class="sourceCode xml"><code class="sourceCode xml"><span class="kw">&lt;Project</span><span class="ot"> DefaultTargets=</span><span class="st">&quot;localBuild&quot;</span><span class="ot"> xmlns=</span><span class="st">&quot;http://schemas.microsoft.com/developer/msbuild/2003&quot;</span><span class="kw">&gt;</span>
-  <span class="kw">&lt;Choose&gt;</span>
-    <span class="kw">&lt;When</span><span class="ot"> Condition=</span><span class="st">&quot; &#39;$(Configuration)&#39;==&#39;Server&#39; &quot;</span><span class="kw">&gt;</span>
-      <span class="kw">&lt;PropertyGroup&gt;</span>
-        <span class="kw">&lt;databaseConnection&gt;</span> Data Source=staging;Initial Catalog=myDataBase;Integrated Security=SSPI;<span class="kw">&lt;/databaseConnection&gt;</span>
-        <span class="kw">&lt;nunitPath&gt;</span>c:\nunit<span class="kw">&lt;/nunitPath&gt;</span>
-        <span class="kw">&lt;projectVersion&gt;</span>1.1.0.0<span class="kw">&lt;/projectVersion&gt;</span>
-        <span class="kw">&lt;runIntegrationTests&gt;</span>True<span class="kw">&lt;/runIntegrationTests&gt;</span>
-      <span class="kw">&lt;/PropertyGroup&gt;</span>
-    <span class="kw">&lt;/When&gt;</span>
-    <span class="kw">&lt;When</span><span class="ot"> Condition=</span><span class="st">&quot; &#39;$(Configuration)&#39;==&#39;Local&#39; &quot;</span><span class="kw">&gt;</span>
-      <span class="kw">&lt;PropertyGroup&gt;</span>
-        <span class="kw">&lt;databaseConnection&gt;</span>Data Source=localhost;Initial Catalog=myDataBase;Integrated Security=SSPI;<span class="kw">&lt;/databaseConnection&gt;</span>
-        <span class="kw">&lt;nunitPath&gt;</span>c:\nunit<span class="kw">&lt;/nunitPath&gt;</span>
-        <span class="kw">&lt;projectVersion&gt;</span>1.1.0.0<span class="kw">&lt;/projectVersion&gt;&lt;br</span> <span class="kw">/&gt;</span>        <span class="kw">&lt;runIntegrationTests&gt;</span>False<span class="kw">&lt;/runIntegrationTests&gt;</span>
-      <span class="kw">&lt;/PropertyGroup&gt;</span>
-    <span class="kw">&lt;/When&gt;</span>
-  <span class="kw">&lt;/Choose&gt;</span>
+<pre class="xml"><code>&lt;Project DefaultTargets=&quot;localBuild&quot; xmlns=&quot;http://schemas.microsoft.com/developer/msbuild/2003&quot;&gt;
+  &lt;Choose&gt;
+    &lt;When Condition=&quot; &#39;$(Configuration)&#39;==&#39;Server&#39; &quot;&gt;
+      &lt;PropertyGroup&gt;
+        &lt;databaseConnection&gt; Data Source=staging;Initial Catalog=myDataBase;Integrated Security=SSPI;&lt;/databaseConnection&gt;
+        &lt;nunitPath&gt;c:\nunit&lt;/nunitPath&gt;
+        &lt;projectVersion&gt;1.1.0.0&lt;/projectVersion&gt;
+        &lt;runIntegrationTests&gt;True&lt;/runIntegrationTests&gt;
+      &lt;/PropertyGroup&gt;
+    &lt;/When&gt;
+    &lt;When Condition=&quot; &#39;$(Configuration)&#39;==&#39;Local&#39; &quot;&gt;
+      &lt;PropertyGroup&gt;
+        &lt;databaseConnection&gt;Data Source=localhost;Initial Catalog=myDataBase;Integrated Security=SSPI;&lt;/databaseConnection&gt;
+        &lt;nunitPath&gt;c:\nunit&lt;/nunitPath&gt;
+        &lt;projectVersion&gt;1.1.0.0&lt;/projectVersion&gt;&lt;br /&gt;        &lt;runIntegrationTests&gt;False&lt;/runIntegrationTests&gt;
+      &lt;/PropertyGroup&gt;
+    &lt;/When&gt;
+  &lt;/Choose&gt;
 
-  <span class="kw">&lt;Target</span><span class="ot"> Name=</span><span class="st">&quot;serverBuild&quot;</span><span class="kw">&gt;</span>
-    <span class="kw">&lt;CallTarget</span><span class="ot"> Targets=</span><span class="st">&quot;init&quot;</span> <span class="kw">/&gt;</span>
-    <span class="kw">&lt;CallTarget</span><span class="ot"> Targets=</span><span class="st">&quot;compile&quot;</span>  <span class="kw">/&gt;</span>
-    <span class="kw">&lt;CallTarget</span><span class="ot"> Targets=</span><span class="st">&quot;migrateDb&quot;</span> <span class="kw">/&gt;</span>
-    <span class="kw">&lt;CallTarget</span><span class="ot"> Targets=</span><span class="st">&quot;test&quot;</span> <span class="kw">/&gt;</span>
-    <span class="kw">&lt;CallTarget</span><span class="ot"> Targets=</span><span class="st">&quot;package&quot;</span> <span class="kw">/&gt;</span>
-    <span class="kw">&lt;CallTarget</span><span class="ot"> Targets=</span><span class="st">&quot;deploy&quot;</span> <span class="kw">/&gt;</span>
-  <span class="kw">&lt;/Target&gt;</span>
+  &lt;Target Name=&quot;serverBuild&quot;&gt;
+    &lt;CallTarget Targets=&quot;init&quot; /&gt;
+    &lt;CallTarget Targets=&quot;compile&quot;  /&gt;
+    &lt;CallTarget Targets=&quot;migrateDb&quot; /&gt;
+    &lt;CallTarget Targets=&quot;test&quot; /&gt;
+    &lt;CallTarget Targets=&quot;package&quot; /&gt;
+    &lt;CallTarget Targets=&quot;deploy&quot; /&gt;
+  &lt;/Target&gt;
 
-  <span class="kw">&lt;Target</span><span class="ot"> Name=</span><span class="st">&quot;localBuild&quot;</span><span class="kw">&gt;</span>
-    <span class="kw">&lt;CallTarget</span><span class="ot"> Targets=</span><span class="st">&quot;init&quot;</span> <span class="kw">/&gt;</span>
-    <span class="kw">&lt;CallTarget</span><span class="ot"> Targets=</span><span class="st">&quot;compile&quot;</span> <span class="kw">/&gt;</span>
-    <span class="kw">&lt;CallTarget</span><span class="ot"> Targets=</span><span class="st">&quot;migrateDb&quot;</span> <span class="kw">/&gt;</span>
-    <span class="kw">&lt;CallTarget</span><span class="ot"> Targets=</span><span class="st">&quot;test&quot;</span> <span class="kw">/&gt;</span>
-  <span class="kw">&lt;/Target&gt;</span>
+  &lt;Target Name=&quot;localBuild&quot;&gt;
+    &lt;CallTarget Targets=&quot;init&quot; /&gt;
+    &lt;CallTarget Targets=&quot;compile&quot; /&gt;
+    &lt;CallTarget Targets=&quot;migrateDb&quot; /&gt;
+    &lt;CallTarget Targets=&quot;test&quot; /&gt;
+  &lt;/Target&gt;
 
-<span class="kw">&lt;/Project&gt;</span></code></pre></div>
+&lt;/Project&gt;</code></pre>
 <h2 id="anti-pattern-one-build-to-rule-them-all">Anti-pattern: One Build to rule them all</h2>
 <p>At first glance a build like this might look like a good idea. The entirety of the build process has been simplified down to two targets and all configuration is handled by a single property and life seems pretty simple. The trade off however is flexibility, the above approach has in essence created the &quot;one build to rule the all&quot;, it is an anti pattern that can result in individual tasks being unable to run in isolation.</p>
 <p>Another problem is that it violates the repeatability principle. It is impossible to run a &quot;server&quot; build without being logged in to the server or by checking in code changes. A solid build system should instead be repeatable anywhere, no special rules should exist for a CI build. I addressed how to handle properties in my post on <a href="http://proactivelylazy.blogspot.com/2011/04/practical-ms-build-flexible.html">flexible configuration</a>.</p>
 <h2 id="tasks-should-declare-dependencies.">Tasks should declare dependencies.</h2>
 <p>In the above example tasks didn't declare their dependencies because the meta tasks (clientBuild, serverBuild) called them in an explicit order. A cleaner and more flexible approach is to have each task declare it's dependencies and let MS Build work out which order to run them in. The testUnit task for example will depend on the code having been compiled first, so it should be declared like this:</p>
-<div class="sourceCode"><pre class="sourceCode xml"><code class="sourceCode xml"><span class="kw">&lt;Target</span><span class="ot"> Name=</span><span class="st">&quot;testIntegration&quot;</span><span class="ot"> DependsOnTargets=</span><span class="st">&quot;compile&quot;</span> <span class="kw">&gt;</span>
-  <span class="kw">&lt;Message</span><span class="ot"> Text=</span><span class="st">&quot;testIntegration&quot;</span> <span class="kw">/&gt;</span>
-<span class="kw">&lt;/Target&gt;</span></code></pre></div>
+<pre class="xml"><code>&lt;Target Name=&quot;testIntegration&quot; DependsOnTargets=&quot;compile&quot; &gt;
+  &lt;Message Text=&quot;testIntegration&quot; /&gt;
+&lt;/Target&gt;</code></pre>
 <p>The testIntegration tasks also needs an up to date database to run so will depend on the migrate task as well:</p>
-<div class="sourceCode"><pre class="sourceCode xml"><code class="sourceCode xml"><span class="kw">&lt;Target</span><span class="ot"> Name=</span><span class="st">&quot;testIntegration&quot;</span><span class="ot"> DependsOnTargets=</span><span class="st">&quot;compile;dbMigrate&quot;</span><span class="kw">&gt;</span>
-  <span class="kw">&lt;Message</span><span class="ot"> Text=</span><span class="st">&quot;testIntegration&quot;</span> <span class="kw">/&gt;</span>
-<span class="kw">&lt;/Target&gt;</span></code></pre></div>
+<pre class="xml"><code>&lt;Target Name=&quot;testIntegration&quot; DependsOnTargets=&quot;compile;dbMigrate&quot;&gt;
+  &lt;Message Text=&quot;testIntegration&quot; /&gt;
+&lt;/Target&gt;</code></pre>
 <p>A general rule of thumb is that if a task depends on the output of another task then that dependency should be explicitly declared.</p>
 <h2 id="users-should-declare-targets">Users should declare targets</h2>
 <p>The package task is an example of where the reverse is true. Before packaging the unit test and integration tests need to pass, it would seem natural to make these dependencies. Package however doesn't depend on the output of testUnit or testIntegration so it should be left up to the user to declare this dependency instead:</p>
 <pre><code>msbuild build.proj /target:testUnit;testIntegration;package</code></pre>
 <p>This way the build still fails if the tests fail but someone can be working on the installer without worrying about long build times.</p>
 <p>Another common example is code versioning, generating an AssemblyInfo class with the appropriate info. Here is a hypothetical version task to do this:</p>
-<div class="sourceCode"><pre class="sourceCode xml"><code class="sourceCode xml"><span class="kw">&lt;Target</span><span class="ot"> Name=</span><span class="st">&quot;version&quot;</span> <span class="kw">&gt;</span>
-  <span class="kw">&lt;AssemblyInfoGen</span><span class="ot"> Version=</span><span class="st">&quot;$(version)&quot;</span><span class="ot"> Output=</span><span class="st">&quot;build\src\AssemblyInfo.cs&quot;</span> <span class="kw">/&gt;</span>
-<span class="kw">&lt;/Target&gt;</span></code></pre></div>
+<pre class="xml"><code>&lt;Target Name=&quot;version&quot; &gt;
+  &lt;AssemblyInfoGen Version=&quot;$(version)&quot; Output=&quot;build\src\AssemblyInfo.cs&quot; /&gt;
+&lt;/Target&gt;</code></pre>
 <p>It would be tempting to have the compile task dependant on this, but this would trigger a full recompile every time (MS Build will only recompile if the files have changed). Release builds are usually the only one that cares about correct version so it doesn't make sense to slow down every build for one, relatively rare occurrence. The compile task will use the output from the version task but does not depend on it, It simply doesn't care one way or the other.</p>
 <p>Anyone that does cares about the correct AssemblyInfo being generated should should make this explicit:</p>
 <pre><code>msbuild build.proj /target:version;compile</code></pre>
@@ -74,11 +74,11 @@
 <p>MS Build come equipped with a call target task which should be avoided whenever possible. Many times I've seen people try to refactor build scripts to conditionally call other tasks. The above example had a &quot;Server&quot; build and a &quot;local&quot; build, other variations include &quot;trunk&quot; and &quot;stable&quot; as well as &quot;test&quot; and &quot;release&quot;.</p>
 <p>What they all have in common is that the violate the repeatability principle. And the points I outlined above give you all you need to avoid this antipattern.</p>
 <p>Another quite common example is having test task that executes an integration and unit test task (to save keystrokes:</p>
-<div class="sourceCode"><pre class="sourceCode xml"><code class="sourceCode xml"><span class="kw">&lt;Target</span><span class="ot"> Name=</span><span class="st">&quot;test&quot;</span> <span class="kw">/&gt;</span>
-  <span class="kw">&lt;CallTarget</span><span class="ot"> Targets=</span><span class="st">&quot;testUnit;testIntegration&quot;</span> <span class="kw">/&gt;</span><span class="er">&lt;</span>
-<span class="er">&lt;</span>/Target&gt;</code></pre></div>
+<pre class="xml"><code>&lt;Target Name=&quot;test&quot; /&gt;
+  &lt;CallTarget Targets=&quot;testUnit;testIntegration&quot; /&gt;&lt;
+&lt;/Target&gt;</code></pre>
 <p>A better alternative would be to declare them as dependencies:</p>
-<div class="sourceCode"><pre class="sourceCode xml"><code class="sourceCode xml"><span class="kw">&lt;Target</span><span class="ot"> Name=</span><span class="st">&quot;test&quot;</span><span class="ot"> DependsOnTargets=</span><span class="st">&quot;testUnit;testIntegration&quot;</span> <span class="kw">/&gt;</span></code></pre></div>
+<pre class="xml"><code>&lt;Target Name=&quot;test&quot; DependsOnTargets=&quot;testUnit;testIntegration&quot; /&gt;</code></pre>
 <h2 id="have-many-builds">Have many builds</h2>
 <p>One way these meta tasks come about is when something needs to be repeated more than once. A &quot;stable&quot; build for example might produce a 32 and a 64 bit version that would be a waste of time if every developer had to repeat for every check in. A far easier solution to this is to enlist he CI server rather than the build system. A typical project might contain the following CI configurations:</p>
 <ul>

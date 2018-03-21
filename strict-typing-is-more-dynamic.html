@@ -11,68 +11,68 @@
 <p>So often the focus of the strongly typed vs dynamic typed debate is about compile time, or lack thereof. Sure, strongly typed languages offer a range of compile time checks not possible in their dynamic counterparts, but less talked about are dynamic, runtime possibilities that a rich type system makes possible.</p>
 <p>Most modern, strongly typed, non-system languages (java, c#, others) come with a reflection API, a method of getting rich type information at runtime. This opens up a world of possibilities to reduce code and decouple components. Today I'll look at a few examples of these.</p>
 <h2 id="dependency-injection">Dependency Injection</h2>
-<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="kw">public</span> <span class="kw">class</span> Foo {
-  <span class="kw">public</span> <span class="fu">Foo</span>(SomeDependency sd, SomeOtherDependeency sod) {
+<pre class="cs"><code>public class Foo {
+  public Foo(SomeDependency sd, SomeOtherDependeency sod) {
   }
-}</code></pre></div>
+}</code></pre>
 <p>The first one that most programmers are probably familiar with is dependency injection. In a strongly typed language, an IOC container can inspect a type, find what other types it depends upon and use the information to construct an object.</p>
 <p>In the above code, the IOC container will see that the Foo class has two dependencies. At runtime it can instantiate an instance class by invoking the constructor and providing the correct dependencies. It can provide different dependencies depending on a range of factors, from configuration to url parameters.</p>
 <p>A multi tenant application, for example, may have different implementations of SomeDependency for differing configurations. The IOC container can look at the URL and provide the correct implementation for that tenant. The controller is completely oblivious to this so it's code is simpler and more maintainable.</p>
 <h2 id="the-mediator-pattern">The Mediator Pattern</h2>
 <p>The mediator pattern is a useful technique to decouple software components. Examples would be CQRS (such as <a href="https://github.com/jbogard/MediatR">mediatr</a>) and pub/sub like with <a href="http://masstransit-project.com/">mass transit</a>. In both cases the calling application knows nothing of the implementor, if one exists at all. Here is an example of a product controller using a mediator:</p>
-<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="kw">public</span> <span class="kw">class</span> DiscountProductCommand : ICommand {
-  <span class="kw">public</span> <span class="dt">int</span> ProductId { <span class="kw">get</span>; <span class="kw">set</span>;}
-  <span class="kw">public</span> <span class="kw">public</span> <span class="dt">double</span> DiscountAmmount { <span class="kw">get</span>; <span class="kw">set</span>; }
+<pre class="cs"><code>public class DiscountProductCommand : ICommand {
+  public int ProductId { get; set;}
+  public public double DiscountAmmount { get; set; }
 }
 
-<span class="kw">public</span> classs ProductController {
+public classs ProductController {
 
-  <span class="kw">private</span> <span class="kw">readonly</span> IMediator Mediator;
-  <span class="kw">private</span> <span class="kw">readonly</span> IUser User;
+  private readonly IMediator Mediator;
+  private readonly IUser User;
 
-  <span class="kw">public</span> <span class="fu">ProductController</span>(IMediator mediator, IUser user) {
+  public ProductController(IMediator mediator, IUser user) {
     Mediator = mediator;
     User = user;
   }
 
-  <span class="kw">public</span> ActionResult <span class="fu">ApplyDiscount</span>(DiscountProductCommand command) {
-    <span class="kw">if</span> (ModelState.<span class="fu">IsValid</span>) {
-      Mediator.<span class="fu">execute</span>(command);
-      User.<span class="fu">Notify</span>(<span class="st">&quot;Discount has been applied&quot;</span>);
-      <span class="kw">return</span> <span class="fu">RedirectToAction</span>(<span class="st">&quot;Home&quot;</span>);
+  public ActionResult ApplyDiscount(DiscountProductCommand command) {
+    if (ModelState.IsValid) {
+      Mediator.execute(command);
+      User.Notify(&quot;Discount has been applied&quot;);
+      return RedirectToAction(&quot;Home&quot;);
     }
-    <span class="kw">return</span> <span class="fu">View</span>(command);
+    return View(command);
   }
 }
 
-<span class="kw">public</span> <span class="kw">class</span> ProductExecutor : IExecute&lt;DiscountProductCommand&gt; {
-  <span class="kw">public</span> <span class="dt">void</span> <span class="fu">Execute</span>(DiscountProductCommand command) {
-    <span class="co">//code goes here</span>
+public class ProductExecutor : IExecute&lt;DiscountProductCommand&gt; {
+  public void Execute(DiscountProductCommand command) {
+    //code goes here
   }
-}</code></pre></div>
+}</code></pre>
 <p>A runtime bootstrapping process will scan the assembly for all types that implement IExecute<Something>, automagically wiring up the application with full type safety. This type of loose coupling of components makes software a joy to maintain and extend.</p>
 <h2 id="rich-metadata">Rich Metadata</h2>
 <p>Reflection APIs aren't limited to just names and types either, rich meta data can be added with attributes. The functionality of these attributes can vary, from simple simple information to full blown AOP designs. Here are a couple of examples:</p>
-<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs"><span class="kw">public</span> <span class="kw">class</span> ProductVM {
-  <span class="kw">public</span> <span class="dt">int</span>? Id { <span class="kw">get</span>; <span class="kw">set</span>; }
+<pre class="cs"><code>public class ProductVM {
+  public int? Id { get; set; }
 
   [Required]
-  <span class="kw">public</span> <span class="dt">string</span> Name { <span class="kw">get</span>; <span class="kw">set</span>; }
+  public string Name { get; set; }
 
-  [<span class="fu">DisplayName</span>(<span class="st">&quot;SKU&quot;</span>)]
+  [DisplayName(&quot;SKU&quot;)]
   [Required]
-  <span class="kw">public</span> <span class="dt">string</span> Code { <span class="kw">get</span>; <span class="kw">set</span>; }
-}</code></pre></div>
+  public string Code { get; set; }
+}</code></pre>
 <p>The DisplayName attribute is used by a form generator to create the correct label and the validator to generate the correct error message. The validator also knows which fields are required, in this simple case all validation is done without writing any real code.</p>
 <p>AOP is a more advanced technique to apply cross cutting concerns with less code. It is highly dynamic and depends heavily on strong type information. Here is an example of how rich logging can be automagically applied:</p>
-<div class="sourceCode"><pre class="sourceCode cs"><code class="sourceCode cs">[EnableLogging]
-<span class="kw">public</span> <span class="kw">class</span> UserAPI {
+<pre class="cs"><code>[EnableLogging]
+public class UserAPI {
 
-  <span class="kw">public</span> List&lt;User&gt; <span class="fu">SearchUsers</span>(UserSeearchQuery query) { }
+  public List&lt;User&gt; SearchUsers(UserSeearchQuery query) { }
 
-  <span class="kw">public</span> <span class="dt">void</span> <span class="fu">ChangePassword</span>(<span class="dt">int</span> userId, [SkipLog]<span class="dt">string</span> oldPassword, [SkipLog]<span class="dt">string</span> newPassword) { }
+  public void ChangePassword(int userId, [SkipLog]string oldPassword, [SkipLog]string newPassword) { }
 
-}</code></pre></div>
+}</code></pre>
 <p>Using an AOP framework a proxy interceptor can be created. The interceptor automatically serializes and logs the method called (and the parameters), the current user, etc. This is great information to have when a bug is reported because all the information needed to replicate the issue can be found in the log. Further refinement can be made, such as avoiding sensitive information (passwords, cc numbers) from ending up log files. The SkipLog attribute allows us to avoid logging sensitive information while still getting the benefits of the interceptor.</p>
 <h2 id="conclusion">Conclusion</h2>
 <p>These are examples of how strongly typed languages can defer many decisions until runtime and respond to a range of environmental factors to build the execution path. I would argue that these approaches make strict typing more dynamic and adaptable than dynamic ones, which usually have to resort to a lot of manual wiring and &quot;stringly&quot; typing to achieve the same results.</p>
