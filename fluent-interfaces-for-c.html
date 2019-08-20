@@ -8,17 +8,15 @@
 	<h1>Fluent Interfaces for C</h1>
 </header>
 <main>
-<p>Warning: The following is an act of masochism more than anything, an experiment to see exactly what's possible and what isn't. Fluent interfaces provide questionable value at the best of times, this example be replicating an assert library where thy seem to be more of a solution looking for a problem.</p>
+<p>Warning: The following is an experiment more than anything, and a slightly masochistic one to probe the limits of what possible. More often than not Fluent interfaces fall into to the category of clever code that should be avoided in favour of stupid, simple code. This especially true of assert libraries I'll be using as an example here, where they add more complication and deliver no value.</p>
 <h2 id="the-good">The Good</h2>
-<p>My goal was to create something that resembled <a href="http://joel-costigliola.github.io/assertj/">AssertJ</a> I was actually quite happy with the result of the whole endeavour.</p>
-<pre class="c"><code>#pragma GCC diagnostic ignored &quot;-Wint-conversion&quot;
-void main(int argc, char** argv) {
+<p>My goal was to create something that resembled <a href="http://joel-costigliola.github.io/assertj/">AssertJ</a> I was actually quite happy with the result of the whole endeavour, ending up with a more or less identical result, at least on the surface:</p>
+<pre class="c"><code>void main(int argc, char** argv) {
     assertThat(&quot;foo&quot;).startsWith(&quot;f&quot;).equals(&quot;foo&quot;);
     assertThat(57).greaterThan(4).lessThan(100).equals(55);
 }</code></pre>
-<p>The only part I'm not really happy about is the #pragma, there were plenty of workarounds for this but I couldn't find anything that worked with a fluent interface. More on this later though.</p>
 <h2 id="the-bad">The bad</h2>
-<p>The implementation is where things take a turn for this worse. Let's look at what defines the public interface, first of all there's the structures, they're all just a collection of function pointers and the typed value:</p>
+<p>The implementation is mostly straightforward. First there's the public interface, basically just a collection of function pointers and the typed value:</p>
 <pre class="c"><code>struct _stringContext {
     struct _stringContext (*equals)(const char*);
     struct _stringContext (*startsWith)(const char*);
@@ -43,13 +41,13 @@ typedef struct _stringContext StringContext;</code></pre>
 }</code></pre>
 <p>And finally there's the last source of problems but what ties everything together, the assertThat _Generic macro:</p>
 <pre class="c"><code>#define assertThat(x) _Generic((x), \
-    int: int_assertThat(x), \
-    char*: string_assertThat(x) \
-)</code></pre>
-<p>This is simple and handy, except for the big problem of generating a lot of warnings about implicit casts. GCC seems to opt for giving you every warning possible too, you'll get warnings about implicitly casting ints to char* and you'll get warnings about converting char* to ints. There are many solutions to handle this generally, like moving the pragma into the macro itself, but the do not work (as far as I could tell) within an expression, like a fluent interface. Despite other issues this was the one I felt makes the whole exercise impractical in real projects.</p>
-<p>The compiler will do the right thing though.</p>
+    int: int_assertThat((intmax_t)x), \
+    char*: string_assertThat((char*)x) \
+) </code></pre>
+<p>This is probably the most interesting snippet of the exercise, many people don't know that C has generics and the implementation is very different to most languages. They're simultaneously more and less powerful while being both harder and easier to use. But basically if the assertThat macro is passed an int it will expand to int_assertThat and if it's passed a char* it will expand to string_assertThat.</p>
+<p>There are some other caveats too, the casting is important because, due to some weirdness beyond my pay grade, every possible expansion has to be evaluated. This is especially problematic when you're mixing pointers with int types. This is is mostly just to control superfluous warnings though, the compiler seems to always do the right thing.</p>
 <h2 id="the-ugly">The Ugly</h2>
-<p>Apart from the warnings the state management opens up several possible error scenarios. In exploring these scenarios it became apparent that some of them were even issues in high level languages. The most obvious one is multi threading, this is probably the easiest though, slap thread local on there and hopefully be done with it.</p>
+<p>The state management is the worst part as it opens up several possible error scenarios. In exploring these scenarios it became apparent that some of them were even issues in high level languages. The most obvious one is multi threading, this is probably the easiest though, slap thread local on there and hopefully be done with it.</p>
 <p>Others fall more into the realm of API misuse, consider the following code:</p>
 <pre class="c"><code>int otherFunc() {
     assertThat(42);
@@ -71,7 +69,7 @@ void main(int argc, char** argv) {
     contextA.equals(57);
 }</code></pre>
 <p>With a fluent API there is nothing stopping the calling code from holding on to the context. In this case they'll get the wrong result, but imagine if this code had side effects, like a registerConfigInContainer() method. Fluent interfaces can't prevent this kind of error, they aren't as safe as they often feel.</p>
-<p>As is usually the case when you try to implement something in C and strip away all the classes, the interfaces and other abstractions found in higher level languages you can see what's going on underneath a lot more clearly. In this case it's remarkably simple, a fluent interface can be boiled down to little more than a series of structures containing function pointers. This is still somewhat enlightening though, if I ever found myself implementing one in a high level language again my solution will be much simpler and have a lot few interfaces.</p>
+<p>As is usually the case when you try to implement something in C and strip away all the classes, the interfaces and other abstractions found in higher level languages you can see what's going on underneath a lot more clearly. In this case it's remarkably simple, a fluent interface can be boiled down to little more than a series of structures containing function pointers. This is still somewhat enlightening though, if I ever found myself implementing one in a high level language again my solution will be much simpler structure of function pointers and no the mess of interfaces of created in the past.</p>
 </main>
 </body>
 </html>
